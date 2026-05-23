@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ピカチュウ てんつなぎ アプリ</title>
+    <style>
+        body {
+            font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+            text-align: center;
+            background-color: #FFFDE7;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* スクロール防止 */
+            touch-action: none; /* ブラウザのデフォルトタッチ操作を無効化 */
+        }
+        #header {
+            padding: 10px;
+            background-color: #FFDE00;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #333;
+        }
+        #game-container {
+            position: relative;
+            margin: 20px auto;
+            width: 90vw;
+            max-width: 500px;
+            aspect-ratio: 5/6;
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            font-weight: bold;
+            color: #FF5252;
+            background: rgba(255,255,255,0.9);
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .controls {
+            margin-top: 10px;
+        }
+        .btn {
+            padding: 10px 20px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            background-color: #FF5252;
+            color: white;
+            box-shadow: 0 4px 0 #D32F2F;
+        }
+        .btn:active {
+            box-shadow: none;
+            transform: translateY(4px);
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>ピカチュウ てんつなぎ</h1>
+        <p style="margin: 5px 0 0 0; font-size: 0.9rem;">１から じゅんばんに タッチしてね！</p>
+    </div>
+
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="message">やったね！</div>
+    </div>
+
+    <div class="controls">
+        <button class="btn" onclick="resetGame()">もういちど やる</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const messageDiv = document.getElementById('message');
+
+        // ピカチュウの点の座標 (1-20) - 500x600ベース
+        const points = [
+            { x: 140, y: 80 },  // 1: 左耳先
+            { x: 180, y: 180 }, // 2: 左耳付根
+            { x: 250, y: 160 }, // 3: 頭頂
+            { x: 320, y: 180 }, // 4: 右耳付根
+            { x: 360, y: 80 },  // 5: 右耳先
+            { x: 400, y: 250 }, // 6: 右顔
+            { x: 430, y: 350 }, // 7: 右手
+            { x: 400, y: 450 }, // 8: 右体
+            { x: 450, y: 460 }, // 9: 尻尾1
+            { x: 480, y: 400 }, // 10: 尻尾2
+            { x: 440, y: 360 }, // 11: 尻尾3
+            { x: 490, y: 300 }, // 12: 尻尾4
+            { x: 350, y: 540 }, // 13: 右足
+            { x: 250, y: 560 }, // 14: お腹下
+            { x: 150, y: 540 }, // 15: 左足
+            { x: 100, y: 450 }, // 16: 左体
+            { x: 70, y: 350 },  // 17: 左手
+            { x: 100, y: 250 }, // 18: 左顔
+            { x: 130, y: 200 }, // 19: 顔上1
+            { x: 160, y: 185 }  // 20: 顔上2
+        ];
+
+        let currentIndex = 0; // 次にタッチすべき点のインデックス
+        let connectedPoints = [];
+        let isComplete = false;
+
+        function initCanvas() {
+            // 解像度対応
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            draw();
+        }
+
+        function draw() {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = rect.width / 500;
+            const scaleY = rect.height / 600;
+
+            ctx.clearRect(0, 0, rect.width, rect.height);
+
+            // すでに引かれた線を太く描画（完成後は黄色）
+            if (connectedPoints.length > 1) {
+                ctx.beginPath();
+                ctx.lineWidth = 5;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.strokeStyle = isComplete ? '#FFDE00' : '#333';
+                
+                ctx.moveTo(connectedPoints[0].x * scaleX, connectedPoints[0].y * scaleY);
+                for (let i = 1; i < connectedPoints.length; i++) {
+                    ctx.lineTo(connectedPoints[i].x * scaleX, connectedPoints[i].y * scaleY);
+                }
+                
+                if (isComplete) {
+                    // 完成時は1に戻る
+                    ctx.lineTo(points[0].x * scaleX, points[0].y * scaleY);
+                }
+                ctx.stroke();
+            }
+
+            // 完成時の色塗り（簡易的）
+            if (isComplete) {
+                ctx.globalAlpha = 0.3;
+                ctx.fillStyle = '#FFEB3B';
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
+
+            // 顔のパーツ描画
+            drawFace(scaleX, scaleY);
+
+            // 点と数字の描画
+            points.forEach((p, i) => {
+                const x = p.x * scaleX;
+                const y = p.y * scaleY;
+                const isPast = (i < currentIndex || isComplete);
+
+                // 点
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = isPast ? '#333' : '#CCC';
+                ctx.fill();
+
+                // 数字
+                ctx.font = 'bold 18px Arial';
+                ctx.fillStyle = isPast ? '#333' : '#999';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                // 数字の位置を点から少しずらす
+                let offsetX = 0;
+                let offsetY = -20;
+                if (i === 0) offsetX = -20;
+                if (i === 4) offsetX = 20;
+                
+                ctx.fillText(i + 1, x + offsetX, y + offsetY);
+            });
+        }
+
+        function drawFace(scaleX, scaleY) {
+            // 目
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(180 * scaleX, 280 * scaleY, 12 * scaleX, 0, Math.PI * 2);
+            ctx.arc(320 * scaleX, 280 * scaleY, 12 * scaleX, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(176 * scaleX, 276 * scaleY, 4 * scaleX, 0, Math.PI * 2);
+            ctx.arc(316 * scaleX, 276 * scaleY, 4 * scaleX, 0, Math.PI * 2);
+            ctx.fill();
+
+            // ほっぺ
+            ctx.fillStyle = '#FF5252';
+            ctx.beginPath();
+            ctx.arc(140 * scaleX, 340 * scaleY, 20 * scaleX, 0, Math.PI * 2);
+            ctx.arc(360 * scaleX, 340 * scaleY, 20 * scaleX, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 鼻と口
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(250 * scaleX, 310 * scaleY, 2 * scaleX, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(230 * scaleX, 330 * scaleY);
+            ctx.quadraticCurveTo(240 * scaleX, 345 * scaleY, 250 * scaleX, 330 * scaleY);
+            ctx.quadraticCurveTo(260 * scaleX, 345 * scaleY, 270 * scaleX, 330 * scaleY);
+            ctx.stroke();
+        }
+
+        function handleTouch(e) {
+            if (isComplete) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches ? e.touches[0] : e;
+            const clientX = touch.clientX;
+            const clientY = touch.clientY;
+            
+            const x = (clientX - rect.left);
+            const y = (clientY - rect.top);
+
+            const scaleX = rect.width / 500;
+            const scaleY = rect.height / 600;
+
+            const target = points[currentIndex];
+            const targetX = target.x * scaleX;
+            const targetY = target.y * scaleY;
+
+            // 当たり判定 (20px程度)
+            const dist = Math.sqrt((x - targetX)**2 + (y - targetY)**2);
+            if (dist < 30) {
+                connectedPoints.push(target);
+                currentIndex++;
+                
+                if (currentIndex >= points.length) {
+                    isComplete = true;
+                    messageDiv.style.display = 'block';
+                }
+                draw();
+            }
+        }
+
+        function resetGame() {
+            currentIndex = 0;
+            connectedPoints = [];
+            isComplete = false;
+            messageDiv.style.display = 'none';
+            draw();
+        }
+
+        // イベント登録
+        window.addEventListener('resize', initCanvas);
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleTouch(e);
+        }, { passive: false });
+        canvas.addEventListener('mousedown', handleTouch);
+
+        // 初回起動
+        setTimeout(initCanvas, 100);
+    </script>
+</body>
+</html>

@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>たしざんぼうけん</title>
+    <style>
+        :root {
+            --bg-color: #E3F2FD;
+            --primary-color: #2196F3;
+            --accent-color: #FF4081;
+            --correct-color: #4CAF50;
+            --wrong-color: #F44336;
+        }
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            touch-action: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+        }
+        #header {
+            width: 100%;
+            padding: 1vh;
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            z-index: 10;
+        }
+        h1 {
+            margin: 0;
+            color: var(--primary-color);
+            font-size: 4vh;
+        }
+        #game-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            width: 100%;
+            padding: 2vh;
+        }
+        #question-box {
+            background: white;
+            padding: 2vh;
+            border-radius: 30px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 960px;
+            text-align: center;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 1vh;
+        }
+        /* 島とネズミのエリア */
+        #progress-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 8vh;
+            background: linear-gradient(to bottom, #81D4FA 50%, #4FC3F7 50%);
+            border-radius: 20px;
+            padding: 0;
+            position: relative;
+            overflow: visible;
+            width: 100%;
+            border: 4px solid #0288D1;
+        }
+        #island-path {
+            position: absolute;
+            bottom: 10%;
+            left: 5%;
+            width: 90%;
+            height: 20%;
+            background-color: #F4A460;
+            border-radius: 10px;
+            z-index: 1;
+        }
+        #mouse {
+            position: absolute;
+            font-size: 6vh;
+            bottom: 15%;
+            left: 5%;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 10;
+            transform: translateX(-50%);
+        }
+        #crown {
+            position: absolute;
+            font-size: 6vh;
+            bottom: 15%;
+            right: 5%;
+            z-index: 5;
+            transform: translateX(50%);
+        }
+        #question-display {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 2vw;
+            width: 100%;
+        }
+        .number-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 12vw;
+        }
+        .num-text {
+            font-size: 7vh;
+            font-weight: bold;
+            line-height: 1;
+        }
+        .dot-container {
+            display: grid;
+            grid-template-columns: repeat(5, 2.5vh);
+            grid-template-rows: repeat(2, 2.5vh);
+            gap: 0;
+            margin-top: 1vh;
+            justify-content: center;
+            border: 1px solid #ccc;
+            width: fit-content;
+        }
+        .grid-cell {
+            width: 2.5vh;
+            height: 2.5vh;
+            border: 1px solid #eee;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .dot {
+            width: 1.8vh;
+            height: 1.8vh;
+            background-color: var(--accent-color);
+            border-radius: 50%;
+        }
+        .symbol-text {
+            font-size: 4.5vh;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-top: 1.2vh;
+        }
+
+        #answer-area {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 2vh;
+            padding-bottom: 2vh;
+        }
+        .answer-row {
+            display: flex;
+            justify-content: center;
+            gap: 1vw;
+            width: 100%;
+        }
+        .answer-btn {
+            flex: 1;
+            max-width: 9vw;
+            height: 12vh;
+            background-color: white;
+            border: 4px solid var(--primary-color);
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s;
+            box-shadow: 0 6px 0 var(--primary-color);
+        }
+        .btn-num {
+            font-size: 5vh;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        .answer-btn:active {
+            box-shadow: none;
+            transform: translateY(6px);
+        }
+        .answer-btn.correct {
+            background-color: var(--correct-color);
+            border-color: #388E3C;
+            box-shadow: 0 6px 0 #388E3C;
+            animation: bounce 0.5s;
+        }
+        .answer-btn.correct .btn-num {
+            color: white;
+        }
+        .answer-btn.wrong {
+            background-color: var(--wrong-color);
+            border-color: #D32F2F;
+            box-shadow: 0 6px 0 #D32F2F;
+            animation: shake 0.3s;
+        }
+        .answer-btn.wrong .btn-num {
+            color: white;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        #overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            pointer-events: none;
+        }
+        #overlay-content {
+            font-size: 20vh;
+            animation: heartPop 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes heartPop {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.5); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .confetti {
+            position: absolute;
+            width: 15px; height: 20px;
+            pointer-events: none;
+            z-index: 50;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+        }
+        #clear-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: white;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+        .big-mouse {
+            font-size: 25vh;
+            animation: bellyBreathe 2s infinite ease-in-out;
+        }
+        @keyframes bellyBreathe {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>たしざんぼうけん</h1>
+    </div>
+
+    <div id="game-area">
+        <div id="question-box">
+            <div id="progress-container">
+                <div id="island-path"></div>
+                <div id="mouse">🐭</div>
+                <div id="crown">👑</div>
+            </div>
+            
+            <div id="question-display">
+                <div class="number-block">
+                    <span id="num1" class="num-text">?</span>
+                    <div id="dots1" class="dot-container"></div>
+                </div>
+                <span class="symbol-text">+</span>
+                <div class="number-block">
+                    <span id="num2" class="num-text">?</span>
+                    <div id="dots2" class="dot-container"></div>
+                </div>
+                <span class="symbol-text">=</span>
+                <div class="number-block">
+                    <span class="num-text" style="color: #ccc">?</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="answer-area">
+            <div id="row1" class="answer-row"></div>
+            <div id="row2" class="answer-row"></div>
+        </div>
+    </div>
+
+    <div id="overlay">
+        <div id="overlay-content">❤️</div>
+        <div id="feedback-text" style="font-size: 5vh; font-weight: bold; color: var(--accent-color); margin-top: 2vh;">やったね！</div>
+    </div>
+
+    <div id="clear-overlay">
+        <div class="big-mouse">🐭</div>
+        <div style="font-size: 4vh; font-weight: bold; color: #FF9800; margin-top: 2vh;">やったー！ぼくのしまについたー！</div>
+        <h2 style="font-size: 6vh; color: var(--primary-color); margin-top: 2vh;">オールクリア！</h2>
+        <button style="padding: 2vh 4vh; font-size: 3vh; margin-top: 4vh; background-color: var(--correct-color); color: white; border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 6px 0 #388E3C;" onclick="resetFullGame()">もういちど あそぶ</button>
+    </div>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playCorrectSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc1 = audioCtx.createOscillator();
+            const osc2 = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc1.type = 'triangle'; osc2.type = 'sine';
+            osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+            osc1.frequency.exponentialRampToValueAtTime(1046.50, audioCtx.currentTime + 0.1);
+            osc2.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1);
+            osc2.frequency.exponentialRampToValueAtTime(1318.51, audioCtx.currentTime + 0.2);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+            osc1.connect(gain); osc2.connect(gain); gain.connect(audioCtx.destination);
+            osc1.start(); osc1.stop(audioCtx.currentTime + 0.5);
+            osc2.start(audioCtx.currentTime + 0.1); osc2.stop(audioCtx.currentTime + 0.5);
+        }
+
+        const num1Span = document.getElementById('num1');
+        const num2Span = document.getElementById('num2');
+        const dots1Div = document.getElementById('dots1');
+        const dots2Div = document.getElementById('dots2');
+        const row1 = document.getElementById('row1');
+        const row2 = document.getElementById('row2');
+        const overlay = document.getElementById('overlay');
+        const feedbackText = document.getElementById('feedback-text');
+        const mouse = document.getElementById('mouse');
+        const clearOverlay = document.getElementById('clear-overlay');
+
+        let currentResult = 0;
+        let correctCount = 0;
+
+        function createDots(container, count) {
+            container.innerHTML = '';
+            for (let i = 0; i < 10; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'grid-cell';
+                if (i < count) {
+                    const dot = document.createElement('div');
+                    dot.className = 'dot';
+                    cell.appendChild(dot);
+                }
+                container.appendChild(cell);
+            }
+        }
+
+        function init() {
+            row1.innerHTML = '';
+            row2.innerHTML = '';
+            for (let i = 1; i <= 20; i++) {
+                const btn = document.createElement('div');
+                btn.className = 'answer-btn';
+                const numSpan = document.createElement('span');
+                numSpan.className = 'btn-num';
+                numSpan.textContent = i;
+                btn.appendChild(numSpan);
+                btn.addEventListener('click', () => checkAnswer(i, btn));
+                btn.addEventListener('touchstart', (e) => { e.preventDefault(); checkAnswer(i, btn); });
+                if (i <= 10) row1.appendChild(btn);
+                else row2.appendChild(btn);
+            }
+            updateMousePosition();
+            newQuestion();
+        }
+
+        function newQuestion() {
+            const n1 = Math.floor(Math.random() * 9) + 1;
+            const n2 = Math.floor(Math.random() * 9) + 1;
+            currentResult = n1 + n2;
+            num1Span.textContent = n1;
+            num2Span.textContent = n2;
+            createDots(dots1Div, n1);
+            createDots(dots2Div, n2);
+            const buttons = document.querySelectorAll('.answer-btn');
+            buttons.forEach(btn => btn.className = 'answer-btn');
+        }
+
+        function checkAnswer(val, btn) {
+            if (overlay.style.display === 'flex' || clearOverlay.style.display === 'flex') return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            const uttr = new SpeechSynthesisUtterance(val.toString());
+            uttr.lang = 'ja-JP';
+            uttr.rate = 1.2;
+
+            uttr.onend = () => {
+                if (val === currentResult) {
+                    playCorrectSound();
+                    btn.classList.add('correct');
+                    correctCount++;
+                    updateMousePosition();
+                    showSuccess();
+                } else {
+                    btn.classList.add('wrong');
+                    setTimeout(() => btn.classList.remove('wrong'), 500);
+                }
+            };
+
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(uttr);
+        }
+
+        function updateMousePosition() {
+            const container = document.getElementById('progress-container');
+            const rect = container.getBoundingClientRect();
+            const startX = rect.width * 0.05;
+            const endX = rect.width * 0.95;
+            const step = (endX - startX) / 10;
+            mouse.style.left = (startX + step * correctCount) + 'px';
+        }
+
+        function showSuccess() {
+            createConfetti();
+            overlay.style.display = 'flex';
+            if (correctCount >= 10) {
+                setTimeout(() => { overlay.style.display = 'none'; showClear(); }, 1500);
+            } else {
+                const feedback = ['やったね！', 'すごい！', 'せいかい！', 'そのちょうし！', 'てんさい！'];
+                feedbackText.textContent = feedback[Math.floor(Math.random() * feedback.length)];
+                setTimeout(() => { overlay.style.display = 'none'; newQuestion(); }, 1500);
+            }
+        }
+
+        function showClear() {
+            clearOverlay.style.display = 'flex';
+            for(let i=0; i<3; i++) setTimeout(createConfetti, i*500);
+        }
+
+        function resetFullGame() {
+            correctCount = 0;
+            clearOverlay.style.display = 'none';
+            updateMousePosition();
+            newQuestion();
+        }
+
+        function createConfetti() {
+            const colors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FF9100', '#FFEA00'];
+            for (let i = 0; i < 60; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.top = '-20px';
+                if (Math.random() > 0.5) confetti.style.borderRadius = '50%';
+                document.body.appendChild(confetti);
+                const duration = 2000 + Math.random() * 2000;
+                const anim = confetti.animate([
+                    { transform: `translateY(0) rotateX(0deg) rotateY(0deg) rotateZ(0deg)`, opacity: 1 },
+                    { transform: `translateY(110vh) translateX(${Math.random() * 200 - 100}px) rotateX(720deg) rotateY(720deg) rotateZ(720deg)`, opacity: 0.8 }
+                ], { duration: duration, easing: 'cubic-bezier(0.1, 0.5, 0.3, 1)' });
+                anim.onfinish = () => confetti.remove();
+            }
+        }
+
+        init();
+        window.addEventListener('resize', updateMousePosition);
+    </script>
+</body>
+</html>
+
