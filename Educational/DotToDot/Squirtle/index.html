@@ -9,21 +9,13 @@
             font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
             text-align: center;
             background-color: #E0F7FA;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            touch-action: none;
+            margin: 0; padding: 0; overflow: hidden; touch-action: none;
         }
-        #header {
-            padding: 10px;
-            background-color: #4FC3F7;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            color: white;
-        }
+        #header { padding: 10px; background-color: #4FC3F7; box-shadow: 0 2px 5px rgba(0,0,0,0.1); color: white; }
         h1 { margin: 0; font-size: 1.5rem; }
         #game-container {
             position: relative;
-            margin: 20px auto;
+            margin: 10px auto;
             width: 90vw;
             max-width: 500px;
             aspect-ratio: 5/6;
@@ -33,136 +25,82 @@
             overflow: hidden;
         }
         canvas { display: block; width: 100%; height: 100%; }
-        #message {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: #0288D1;
-            margin-top: 20px;
-            display: none;
-            z-index: 10;
-        }
-        .controls { margin-top: 10px; }
+        #message { font-size: 2.5rem; font-weight: bold; color: #0288D1; margin-top: 10px; display: none; }
+        .controls { margin-top: 5px; }
         .btn {
-            padding: 10px 20px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            border: none;
-            border-radius: 30px;
-            cursor: pointer;
-            background-color: #0288D1;
-            color: white;
-            box-shadow: 0 4px 0 #01579B;
-            margin: 0 5px;
+            padding: 8px 15px; font-size: 1rem; font-weight: bold; border: none; border-radius: 30px;
+            cursor: pointer; background-color: #0288D1; color: white; box-shadow: 0 4px 0 #01579B; margin: 0 5px;
         }
         .btn:active { box-shadow: none; transform: translateY(4px); }
     </style>
 </head>
 <body>
     <div id="header">
-        <h1>ゼニガメ てんつなぎ <span style="font-size: 0.6rem; opacity: 0.7;">v2.0</span></h1>
-        <p style="margin: 5px 0 0 0; font-size: 0.9rem;">１から じゅんばんに タッチしてね！</p>
+        <h1>ゼニガメ てんつなぎ <span style="font-size: 0.6rem; opacity: 0.7;">v3.0</span></h1>
+        <p style="margin: 5px 0 0 0; font-size: 0.8rem;">１から じゅんばんに タッチしてね！</p>
     </div>
-
-    <div id="game-container">
-        <canvas id="gameCanvas"></canvas>
-    </div>
-
+    <div id="game-container"><canvas id="gameCanvas"></canvas></div>
     <div class="controls">
         <button class="btn" onclick="resetGame()">もういちど やる</button>
         <button class="btn" style="background-color: #9e9e9e; box-shadow: 0 4px 0 #616161;" onclick="location.href='../index.html'">もどる</button>
     </div>
-
     <div id="message">やったね！</div>
-
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const messageDiv = document.getElementById('message');
 
         const points = [
-            { x: 250, y: 100 }, { x: 320, y: 130 }, { x: 350, y: 200 }, { x: 320, y: 270 }, { x: 400, y: 300 },
-            { x: 350, y: 350 }, { x: 380, y: 450 }, { x: 350, y: 530 }, { x: 250, y: 550 }, { x: 150, y: 530 },
-            { x: 100, y: 500 }, { x: 120, y: 450 }, { x: 80, y: 350 }, { x: 50, y: 300 }, { x: 180, y: 270 },
-            { x: 150, y: 200 }, { x: 180, y: 130 }, { x: 220, y: 110 }, { x: 250, y: 115 }, { x: 280, y: 110 }
+            {x: 250, y: 80}, {x: 300, y: 90}, {x: 340, y: 120}, {x: 360, y: 170}, {x: 350, y: 230}, {x: 320, y: 270}, // 頭
+            {x: 380, y: 280}, {x: 430, y: 320}, {x: 400, y: 350}, {x: 350, y: 360}, // 右腕
+            {x: 380, y: 400}, {x: 400, y: 450}, {x: 380, y: 500}, {x: 340, y: 540}, // 右甲羅〜足
+            {x: 250, y: 560}, {x: 160, y: 540}, {x: 120, y: 500}, {x: 100, y: 450}, // 足〜左甲羅
+            {x: 60, y: 480}, {x: 30, y: 450}, {x: 50, y: 420}, // 尻尾
+            {x: 120, y: 400}, {x: 150, y: 360}, {x: 100, y: 350}, {x: 70, y: 320}, {x: 120, y: 280}, // 左腕
+            {x: 180, y: 270}, {x: 150, y: 230}, {x: 140, y: 170}, {x: 160, y: 120}, {x: 200, y: 90} // 顔左
         ];
 
         let currentIndex = 0; let connectedPoints = []; let isComplete = false;
-
         function initCanvas() {
             const dpr = window.devicePixelRatio || 1;
             const rect = canvas.getBoundingClientRect();
             canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
             ctx.scale(dpr, dpr); draw();
         }
-
         function draw() {
             const rect = canvas.getBoundingClientRect();
             const scaleX = rect.width / 500; const scaleY = rect.height / 600;
             ctx.clearRect(0, 0, rect.width, rect.height);
-
             if (connectedPoints.length > 1) {
-                ctx.beginPath();
-                ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+                ctx.beginPath(); ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
                 ctx.strokeStyle = isComplete ? '#4FC3F7' : '#333';
                 ctx.moveTo(connectedPoints[0].x * scaleX, connectedPoints[0].y * scaleY);
-                for (let i = 1; i < connectedPoints.length; i++) {
-                    ctx.lineTo(connectedPoints[i].x * scaleX, connectedPoints[i].y * scaleY);
-                }
+                for (let i = 1; i < connectedPoints.length; i++) ctx.lineTo(connectedPoints[i].x * scaleX, connectedPoints[i].y * scaleY);
                 if (isComplete) ctx.lineTo(points[0].x * scaleX, points[0].y * scaleY);
                 ctx.stroke();
             }
-
             if (isComplete) {
-                ctx.globalAlpha = 1.0;
                 ctx.fillStyle = '#81D4FA'; ctx.fill();
-                ctx.beginPath();
-                ctx.moveTo(180 * scaleX, 270 * scaleY);
-                ctx.lineTo(320 * scaleX, 270 * scaleY); ctx.lineTo(380 * scaleX, 450 * scaleY);
-                ctx.lineTo(120 * scaleX, 450 * scaleY); ctx.closePath();
+                ctx.beginPath(); ctx.moveTo(180*scaleX, 270*scaleY); ctx.lineTo(320*scaleX, 270*scaleY); ctx.lineTo(350*scaleX, 500*scaleY); ctx.lineTo(150*scaleX, 500*scaleY); ctx.closePath();
                 ctx.fillStyle = '#A1887F'; ctx.fill();
-                ctx.beginPath();
-                ctx.moveTo(200 * scaleX, 320 * scaleY);
-                ctx.quadraticCurveTo(250 * scaleX, 340 * scaleY, 300 * scaleX, 320 * scaleY);
-                ctx.lineTo(330 * scaleX, 480 * scaleY);
-                ctx.quadraticCurveTo(250 * scaleX, 510 * scaleY, 170 * scaleX, 480 * scaleY);
-                ctx.closePath();
+                ctx.beginPath(); ctx.moveTo(200*scaleX, 320*scaleY); ctx.quadraticCurveTo(250*scaleX, 340*scaleY, 300*scaleX, 320*scaleY); ctx.lineTo(320*scaleX, 480*scaleY); ctx.quadraticCurveTo(250*scaleX, 500*scaleY, 180*scaleX, 480*scaleY); ctx.closePath();
                 ctx.fillStyle = '#FFF9C4'; ctx.fill();
-                ctx.strokeStyle = '#D4E157'; ctx.lineWidth = 2; ctx.stroke();
             }
-
             drawFace(scaleX, scaleY);
-
             points.forEach((p, i) => {
                 const x = p.x * scaleX; const y = p.y * scaleY;
                 const isPast = (i < currentIndex || isComplete);
-                ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2);
-                ctx.fillStyle = isPast ? '#333' : '#CCC'; ctx.fill();
-                ctx.font = 'bold 18px Arial'; ctx.fillStyle = isPast ? '#333' : '#999';
-                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText(i + 1, x, y - 20);
+                ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fillStyle = isPast ? '#333' : '#CCC'; ctx.fill();
+                if (!isComplete && (i % 2 === 0)) {
+                    ctx.font = 'bold 12px Arial'; ctx.fillStyle = isPast ? '#333' : '#999'; ctx.fillText(i + 1, x, y - 10);
+                }
             });
         }
-
         function drawFace(scaleX, scaleY) {
-            ctx.fillStyle = 'black'; ctx.beginPath();
-            ctx.ellipse(210 * scaleX, 190 * scaleY, 10 * scaleX, 15 * scaleY, 0, 0, Math.PI * 2);
-            ctx.ellipse(290 * scaleX, 190 * scaleY, 10 * scaleX, 15 * scaleY, 0, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = 'white'; ctx.beginPath();
-            ctx.arc(210 * scaleX, 185 * scaleY, 3 * scaleX, 0, Math.PI * 2);
-            ctx.arc(290 * scaleX, 185 * scaleY, 3 * scaleX, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = 'black'; ctx.beginPath();
-            ctx.arc(245 * scaleX, 215 * scaleY, 1.5 * scaleX, 0, Math.PI * 2);
-            ctx.arc(255 * scaleX, 215 * scaleY, 1.5 * scaleX, 0, Math.PI * 2); ctx.fill();
-            ctx.strokeStyle = 'black'; ctx.lineWidth = 2; ctx.beginPath();
-            ctx.moveTo(220 * scaleX, 235 * scaleY);
-            ctx.quadraticCurveTo(250 * scaleX, 250 * scaleY, 280 * scaleX, 235 * scaleY); ctx.stroke();
-            if (isComplete) {
-                ctx.strokeStyle = '#81D4FA'; ctx.lineWidth = 2; ctx.beginPath();
-                ctx.moveTo(200 * scaleX, 350 * scaleY); ctx.lineTo(300 * scaleX, 350 * scaleY);
-                ctx.moveTo(250 * scaleX, 300 * scaleY); ctx.lineTo(250 * scaleX, 450 * scaleY); ctx.stroke();
-            }
+            ctx.fillStyle = 'black'; ctx.beginPath(); ctx.ellipse(210*scaleX, 180*scaleY, 8*scaleX, 12*scaleY, 0, 0, 2*Math.PI); ctx.ellipse(290*scaleX, 180*scaleY, 8*scaleX, 12*scaleY, 0, 0, 2*Math.PI); ctx.fill();
+            ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(210*scaleX, 175*scaleY, 2*scaleX, 0, 2*Math.PI); ctx.arc(290*scaleX, 175*scaleY, 2*scaleX, 0, 2*Math.PI); ctx.fill();
+            ctx.strokeStyle = 'black'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(220*scaleX, 230*scaleY); ctx.quadraticCurveTo(250*scaleX, 245*scaleY, 280*scaleX, 230*scaleY); ctx.stroke();
         }
-
         function handleTouch(e) {
             if (isComplete) return;
             const rect = canvas.getBoundingClientRect();
@@ -171,13 +109,12 @@
             const scaleX = rect.width / 500; const scaleY = rect.height / 600;
             const target = points[currentIndex];
             const dist = Math.sqrt((x - target.x * scaleX)**2 + (y - target.y * scaleY)**2);
-            if (dist < 30) {
+            if (dist < 25) {
                 connectedPoints.push(target); currentIndex++;
                 if (currentIndex >= points.length) { isComplete = true; messageDiv.style.display = 'block'; }
                 draw();
             }
         }
-
         window.addEventListener('resize', initCanvas);
         canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleTouch(e); }, { passive: false });
         canvas.addEventListener('mousedown', handleTouch);
