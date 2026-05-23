@@ -34,18 +34,11 @@
         }
         canvas { display: block; width: 100%; height: 100%; }
         #message {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 2rem;
+            font-size: 2.5rem;
             font-weight: bold;
             color: #388E3C;
-            background: rgba(255,255,255,0.9);
-            padding: 20px;
-            border-radius: 10px;
+            margin-top: 20px;
             display: none;
-            pointer-events: none;
             z-index: 10;
         }
         .controls { margin-top: 10px; }
@@ -59,6 +52,7 @@
             background-color: #689F38;
             color: white;
             box-shadow: 0 4px 0 #33691E;
+            margin: 0 5px;
         }
         .btn:active { box-shadow: none; transform: translateY(4px); }
     </style>
@@ -71,13 +65,14 @@
 
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
-        <div id="message">やったね！</div>
     </div>
 
     <div class="controls">
         <button class="btn" onclick="resetGame()">もういちど やる</button>
         <button class="btn" style="background-color: #9e9e9e; box-shadow: 0 4px 0 #616161;" onclick="location.href='../index.html'">もどる</button>
     </div>
+
+    <div id="message">やったね！</div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -119,10 +114,7 @@
 
             if (isComplete) {
                 ctx.globalAlpha = 1.0;
-                ctx.fillStyle = '#AED581';
-                ctx.fill();
-
-                // お腹
+                ctx.fillStyle = '#AED581'; ctx.fill();
                 ctx.beginPath();
                 ctx.moveTo(150 * scaleX, 300 * scaleY);
                 ctx.quadraticCurveTo(250 * scaleX, 330 * scaleY, 350 * scaleX, 300 * scaleY);
@@ -130,16 +122,12 @@
                 ctx.quadraticCurveTo(250 * scaleX, 380 * scaleY, 150 * scaleX, 350 * scaleY);
                 ctx.closePath();
                 ctx.fillStyle = '#FFF59D'; ctx.fill(); ctx.stroke();
-
-                // 芽
                 ctx.fillStyle = '#388E3C';
                 ctx.beginPath();
                 ctx.moveTo(250 * scaleX, 50 * scaleY);
                 ctx.quadraticCurveTo(280 * scaleX, 85 * scaleY, 250 * scaleX, 120 * scaleY);
                 ctx.quadraticCurveTo(220 * scaleX, 85 * scaleY, 250 * scaleX, 50 * scaleY);
                 ctx.fill(); ctx.stroke();
-                
-                // 爪
                 ctx.fillStyle = 'white';
                 [6, 8, 12, 14].forEach(idx => {
                     ctx.beginPath(); ctx.arc(points[idx-1].x * scaleX, points[idx-1].y * scaleY, 5 * scaleX, 0, Math.PI*2);
@@ -161,18 +149,18 @@
         }
 
         function drawFace(scaleX, scaleY) {
-            ctx.fillStyle = 'black';
-            ctx.beginPath(); ctx.arc(190 * scaleX, 240 * scaleY, 12 * scaleX, 0, Math.PI * 2);
+            ctx.fillStyle = 'black'; ctx.beginPath();
+            ctx.arc(190 * scaleX, 240 * scaleY, 12 * scaleX, 0, Math.PI * 2);
             ctx.arc(310 * scaleX, 240 * scaleY, 12 * scaleX, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = 'white';
-            ctx.beginPath(); ctx.arc(186 * scaleX, 236 * scaleY, 4 * scaleX, 0, Math.PI * 2);
+            ctx.fillStyle = 'white'; ctx.beginPath();
+            ctx.arc(186 * scaleX, 236 * scaleY, 4 * scaleX, 0, Math.PI * 2);
             ctx.arc(306 * scaleX, 236 * scaleY, 4 * scaleX, 0, Math.PI * 2); ctx.fill();
-            ctx.strokeStyle = 'black'; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.moveTo(180 * scaleX, 300 * scaleY);
+            ctx.strokeStyle = 'black'; ctx.lineWidth = 2; ctx.beginPath();
+            ctx.moveTo(180 * scaleX, 300 * scaleY);
             ctx.quadraticCurveTo(250 * scaleX, 330 * scaleY, 320 * scaleX, 300 * scaleY); ctx.stroke();
             if (isComplete) {
-                ctx.strokeStyle = '#558B2F'; ctx.lineWidth = 3;
-                ctx.beginPath(); ctx.moveTo(150 * scaleX, 350 * scaleY); ctx.lineTo(350 * scaleX, 350 * scaleY); ctx.stroke();
+                ctx.strokeStyle = '#558B2F'; ctx.lineWidth = 3; ctx.beginPath();
+                ctx.moveTo(150 * scaleX, 350 * scaleY); ctx.lineTo(350 * scaleX, 350 * scaleY); ctx.stroke();
             }
         }
 

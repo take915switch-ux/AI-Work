@@ -34,18 +34,11 @@
         }
         canvas { display: block; width: 100%; height: 100%; }
         #message {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 2rem;
+            font-size: 2.5rem;
             font-weight: bold;
             color: #D81B60;
-            background: rgba(255,255,255,0.9);
-            padding: 20px;
-            border-radius: 10px;
+            margin-top: 20px;
             display: none;
-            pointer-events: none;
             z-index: 10;
         }
         .controls { margin-top: 10px; }
@@ -59,6 +52,7 @@
             background-color: #F06292;
             color: white;
             box-shadow: 0 4px 0 #C2185B;
+            margin: 0 5px;
         }
         .btn:active { box-shadow: none; transform: translateY(4px); }
     </style>
@@ -71,13 +65,14 @@
 
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
-        <div id="message">やったね！</div>
     </div>
 
     <div class="controls">
         <button class="btn" onclick="resetGame()">もういちど やる</button>
         <button class="btn" style="background-color: #9e9e9e; box-shadow: 0 4px 0 #616161;" onclick="location.href='../index.html'">もどる</button>
     </div>
+
+    <div id="message">やったね！</div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -119,16 +114,11 @@
 
             if (isComplete) {
                 ctx.globalAlpha = 1.0;
-                ctx.fillStyle = '#FCE4EC';
-                ctx.fill();
-
-                // 尻尾の先
-                ctx.fillStyle = '#F48FB1';
-                ctx.beginPath();
+                ctx.fillStyle = '#FCE4EC'; ctx.fill();
+                ctx.fillStyle = '#F48FB1'; ctx.beginPath();
                 ctx.moveTo(points[10].x * scaleX, points[10].y * scaleY);
                 ctx.quadraticCurveTo(350 * scaleX, 280 * scaleY, 250 * scaleX, 280 * scaleY);
-                ctx.lineTo(300 * scaleX, 320 * scaleY);
-                ctx.closePath(); ctx.fill();
+                ctx.lineTo(300 * scaleX, 320 * scaleY); ctx.closePath(); ctx.fill();
             }
 
             drawFace(scaleX, scaleY);

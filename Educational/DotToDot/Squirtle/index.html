@@ -34,18 +34,11 @@
         }
         canvas { display: block; width: 100%; height: 100%; }
         #message {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 2rem;
+            font-size: 2.5rem;
             font-weight: bold;
             color: #0288D1;
-            background: rgba(255,255,255,0.9);
-            padding: 20px;
-            border-radius: 10px;
+            margin-top: 20px;
             display: none;
-            pointer-events: none;
             z-index: 10;
         }
         .controls { margin-top: 10px; }
@@ -59,179 +52,114 @@
             background-color: #0288D1;
             color: white;
             box-shadow: 0 4px 0 #01579B;
+            margin: 0 5px;
         }
         .btn:active { box-shadow: none; transform: translateY(4px); }
     </style>
 </head>
 <body>
     <div id="header">
-        <h1>ゼニガメ てんつなぎ</h1>
+        <h1>ゼニガメ てんつなぎ <span style="font-size: 0.6rem; opacity: 0.7;">v2.0</span></h1>
         <p style="margin: 5px 0 0 0; font-size: 0.9rem;">１から じゅんばんに タッチしてね！</p>
     </div>
 
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
-        <div id="message">やったね！</div>
     </div>
 
     <div class="controls">
         <button class="btn" onclick="resetGame()">もういちど やる</button>
-        <button class="btn" style="background-color: #9e9e9e; box-shadow: 0 4px 0 #616161;" onclick="location.href='../../../index.html'">もどる</button>
+        <button class="btn" style="background-color: #9e9e9e; box-shadow: 0 4px 0 #616161;" onclick="location.href='../index.html'">もどる</button>
     </div>
+
+    <div id="message">やったね！</div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const messageDiv = document.getElementById('message');
 
-        // ゼニガメの点の座標 (1-20) - 500x600ベース
-        // 頭、甲羅、手足の概形
         const points = [
-            { x: 250, y: 100 }, // 1: 頭頂
-            { x: 320, y: 130 }, // 2: 右おでこ
-            { x: 350, y: 200 }, // 3: 右頬
-            { x: 320, y: 270 }, // 4: 首右
-            { x: 400, y: 300 }, // 5: 右手先
-            { x: 350, y: 350 }, // 6: 右脇
-            { x: 380, y: 450 }, // 7: 右甲羅下
-            { x: 350, y: 530 }, // 8: 右足
-            { x: 250, y: 550 }, // 9: お腹下
-            { x: 150, y: 530 }, // 10: 左足
-            { x: 100, y: 500 }, // 11: 尻尾先
-            { x: 120, y: 450 }, // 12: 左甲羅下
-            { x: 80, y: 350 },  // 13: 左脇
-            { x: 50, y: 300 },  // 14: 左手先
-            { x: 180, y: 270 }, // 15: 首左
-            { x: 150, y: 200 }, // 16: 左頬
-            { x: 180, y: 130 }, // 17: 左おでこ
-            { x: 220, y: 110 }, // 18: 顔上1
-            { x: 250, y: 115 }, // 19: 顔上2
-            { x: 280, y: 110 }  // 20: 顔上3
+            { x: 250, y: 100 }, { x: 320, y: 130 }, { x: 350, y: 200 }, { x: 320, y: 270 }, { x: 400, y: 300 },
+            { x: 350, y: 350 }, { x: 380, y: 450 }, { x: 350, y: 530 }, { x: 250, y: 550 }, { x: 150, y: 530 },
+            { x: 100, y: 500 }, { x: 120, y: 450 }, { x: 80, y: 350 }, { x: 50, y: 300 }, { x: 180, y: 270 },
+            { x: 150, y: 200 }, { x: 180, y: 130 }, { x: 220, y: 110 }, { x: 250, y: 115 }, { x: 280, y: 110 }
         ];
 
-        let currentIndex = 0;
-        let connectedPoints = [];
-        let isComplete = false;
+        let currentIndex = 0; let connectedPoints = []; let isComplete = false;
 
         function initCanvas() {
             const dpr = window.devicePixelRatio || 1;
             const rect = canvas.getBoundingClientRect();
-            canvas.width = rect.width * dpr;
-            canvas.height = rect.height * dpr;
-            ctx.scale(dpr, dpr);
-            draw();
+            canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr); draw();
         }
 
         function draw() {
             const rect = canvas.getBoundingClientRect();
-            const scaleX = rect.width / 500;
-            const scaleY = rect.height / 600;
-
+            const scaleX = rect.width / 500; const scaleY = rect.height / 600;
             ctx.clearRect(0, 0, rect.width, rect.height);
 
             if (connectedPoints.length > 1) {
                 ctx.beginPath();
-                ctx.lineWidth = 5;
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
+                ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
                 ctx.strokeStyle = isComplete ? '#4FC3F7' : '#333';
                 ctx.moveTo(connectedPoints[0].x * scaleX, connectedPoints[0].y * scaleY);
                 for (let i = 1; i < connectedPoints.length; i++) {
                     ctx.lineTo(connectedPoints[i].x * scaleX, connectedPoints[i].y * scaleY);
                 }
-                <div id="header">
-                    <h1>ゼニガメ てんつなぎ <span style="font-size: 0.6rem; opacity: 0.7;">v2.0</span></h1>
-                    <p style="margin: 5px 0 0 0; font-size: 0.9rem;">１から じゅんばんに タッチしてね！</p>
-                </div>
-                ...
-                        if (isComplete) {
-                            // 1. 体全体を水色
-                            ctx.globalAlpha = 1.0;
-                            ctx.fillStyle = '#81D4FA';
-                            ctx.fill();
+                if (isComplete) ctx.lineTo(points[0].x * scaleX, points[0].y * scaleY);
+                ctx.stroke();
+            }
 
-                            // 2. 甲羅の茶色 (外枠より内側)
-                            ctx.beginPath();
-                            ctx.moveTo(180 * scaleX, 270 * scaleY);
-                            ctx.lineTo(320 * scaleX, 270 * scaleY);
-                            ctx.lineTo(380 * scaleX, 450 * scaleY);
-                            ctx.lineTo(120 * scaleX, 450 * scaleY);
-                            ctx.closePath();
-                            ctx.fillStyle = '#A1887F';
-                            ctx.fill();
-
-                            // 3. お腹の薄い黄色
-                            ctx.beginPath();
-                            ctx.moveTo(200 * scaleX, 320 * scaleY);
-                            ctx.quadraticCurveTo(250 * scaleX, 340 * scaleY, 300 * scaleX, 320 * scaleY);
-                            ctx.lineTo(330 * scaleX, 480 * scaleY);
-                            ctx.quadraticCurveTo(250 * scaleX, 510 * scaleY, 170 * scaleX, 480 * scaleY);
-                            ctx.closePath();
-                            ctx.fillStyle = '#FFF9C4';
-                            ctx.fill();
-                            ctx.strokeStyle = '#D4E157';
-                            ctx.lineWidth = 2;
-                            ctx.stroke();
-                        }
-
-                        drawFace(scaleX, scaleY);
-            points.forEach((p, i) => {
-                const x = p.x * scaleX;
-                const y = p.y * scaleY;
-                const isPast = (i < currentIndex || isComplete);
-
+            if (isComplete) {
+                ctx.globalAlpha = 1.0;
+                ctx.fillStyle = '#81D4FA'; ctx.fill();
                 ctx.beginPath();
-                ctx.arc(x, y, 4, 0, Math.PI * 2);
-                ctx.fillStyle = isPast ? '#333' : '#CCC';
-                ctx.fill();
+                ctx.moveTo(180 * scaleX, 270 * scaleY);
+                ctx.lineTo(320 * scaleX, 270 * scaleY); ctx.lineTo(380 * scaleX, 450 * scaleY);
+                ctx.lineTo(120 * scaleX, 450 * scaleY); ctx.closePath();
+                ctx.fillStyle = '#A1887F'; ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(200 * scaleX, 320 * scaleY);
+                ctx.quadraticCurveTo(250 * scaleX, 340 * scaleY, 300 * scaleX, 320 * scaleY);
+                ctx.lineTo(330 * scaleX, 480 * scaleY);
+                ctx.quadraticCurveTo(250 * scaleX, 510 * scaleY, 170 * scaleX, 480 * scaleY);
+                ctx.closePath();
+                ctx.fillStyle = '#FFF9C4'; ctx.fill();
+                ctx.strokeStyle = '#D4E157'; ctx.lineWidth = 2; ctx.stroke();
+            }
 
-                ctx.font = 'bold 18px Arial';
-                ctx.fillStyle = isPast ? '#333' : '#999';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
+            drawFace(scaleX, scaleY);
+
+            points.forEach((p, i) => {
+                const x = p.x * scaleX; const y = p.y * scaleY;
+                const isPast = (i < currentIndex || isComplete);
+                ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = isPast ? '#333' : '#CCC'; ctx.fill();
+                ctx.font = 'bold 18px Arial'; ctx.fillStyle = isPast ? '#333' : '#999';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                 ctx.fillText(i + 1, x, y - 20);
             });
         }
 
         function drawFace(scaleX, scaleY) {
-            // 目
-            ctx.fillStyle = 'black';
-            ctx.beginPath();
+            ctx.fillStyle = 'black'; ctx.beginPath();
             ctx.ellipse(210 * scaleX, 190 * scaleY, 10 * scaleX, 15 * scaleY, 0, 0, Math.PI * 2);
-            ctx.ellipse(290 * scaleX, 190 * scaleY, 10 * scaleX, 15 * scaleY, 0, 0, Math.PI * 2);
-            ctx.fill();
-            
-            ctx.fillStyle = 'white';
-            ctx.beginPath();
+            ctx.ellipse(290 * scaleX, 190 * scaleY, 10 * scaleX, 15 * scaleY, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = 'white'; ctx.beginPath();
             ctx.arc(210 * scaleX, 185 * scaleY, 3 * scaleX, 0, Math.PI * 2);
-            ctx.arc(290 * scaleX, 185 * scaleY, 3 * scaleX, 0, Math.PI * 2);
-            ctx.fill();
-
-            // 鼻
-            ctx.fillStyle = 'black';
-            ctx.beginPath();
+            ctx.arc(290 * scaleX, 185 * scaleY, 3 * scaleX, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = 'black'; ctx.beginPath();
             ctx.arc(245 * scaleX, 215 * scaleY, 1.5 * scaleX, 0, Math.PI * 2);
-            ctx.arc(255 * scaleX, 215 * scaleY, 1.5 * scaleX, 0, Math.PI * 2);
-            ctx.fill();
-
-            // 口
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
+            ctx.arc(255 * scaleX, 215 * scaleY, 1.5 * scaleX, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = 'black'; ctx.lineWidth = 2; ctx.beginPath();
             ctx.moveTo(220 * scaleX, 235 * scaleY);
-            ctx.quadraticCurveTo(250 * scaleX, 250 * scaleY, 280 * scaleX, 235 * scaleY);
-            ctx.stroke();
-
-            // 甲羅の模様（簡易的）
+            ctx.quadraticCurveTo(250 * scaleX, 250 * scaleY, 280 * scaleX, 235 * scaleY); ctx.stroke();
             if (isComplete) {
-                ctx.strokeStyle = '#81D4FA';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(200 * scaleX, 350 * scaleY);
-                ctx.lineTo(300 * scaleX, 350 * scaleY);
-                ctx.moveTo(250 * scaleX, 300 * scaleY);
-                ctx.lineTo(250 * scaleX, 450 * scaleY);
-                ctx.stroke();
+                ctx.strokeStyle = '#81D4FA'; ctx.lineWidth = 2; ctx.beginPath();
+                ctx.moveTo(200 * scaleX, 350 * scaleY); ctx.lineTo(300 * scaleX, 350 * scaleY);
+                ctx.moveTo(250 * scaleX, 300 * scaleY); ctx.lineTo(250 * scaleX, 450 * scaleY); ctx.stroke();
             }
         }
 
@@ -239,19 +167,13 @@
             if (isComplete) return;
             const rect = canvas.getBoundingClientRect();
             const touch = e.touches ? e.touches[0] : e;
-            const x = (touch.clientX - rect.left);
-            const y = (touch.clientY - rect.top);
-            const scaleX = rect.width / 500;
-            const scaleY = rect.height / 600;
+            const x = touch.clientX - rect.left; const y = touch.clientY - rect.top;
+            const scaleX = rect.width / 500; const scaleY = rect.height / 600;
             const target = points[currentIndex];
             const dist = Math.sqrt((x - target.x * scaleX)**2 + (y - target.y * scaleY)**2);
             if (dist < 30) {
-                connectedPoints.push(target);
-                currentIndex++;
-                if (currentIndex >= points.length) {
-                    isComplete = true;
-                    messageDiv.style.display = 'block';
-                }
+                connectedPoints.push(target); currentIndex++;
+                if (currentIndex >= points.length) { isComplete = true; messageDiv.style.display = 'block'; }
                 draw();
             }
         }
@@ -260,11 +182,7 @@
         canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleTouch(e); }, { passive: false });
         canvas.addEventListener('mousedown', handleTouch);
         setTimeout(initCanvas, 100);
-
-        function resetGame() {
-            currentIndex = 0; connectedPoints = []; isComplete = false;
-            messageDiv.style.display = 'none'; draw();
-        }
+        function resetGame() { currentIndex = 0; connectedPoints = []; isComplete = false; messageDiv.style.display = 'none'; draw(); }
     </script>
 </body>
 </html>
