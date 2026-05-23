@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ナエトル てんつなぎ</title>
+    <style>
+        body {
+            font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+            text-align: center;
+            background-color: #F1F8E9;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            touch-action: none;
+        }
+        #header {
+            padding: 10px;
+            background-color: #8BC34A;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            color: white;
+        }
+        h1 { margin: 0; font-size: 1.5rem; }
+        #game-container {
+            position: relative;
+            margin: 20px auto;
+            width: 90vw;
+            max-width: 500px;
+            aspect-ratio: 5/6;
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            font-weight: bold;
+            color: #388E3C;
+            background: rgba(255,255,255,0.9);
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .controls { margin-top: 10px; }
+        .btn {
+            padding: 10px 20px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            background-color: #689F38;
+            color: white;
+            box-shadow: 0 4px 0 #33691E;
+        }
+        .btn:active { box-shadow: none; transform: translateY(4px); }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>ナエトル てんつなぎ</h1>
+        <p style="margin: 5px 0 0 0; font-size: 0.9rem;">１から じゅんばんに タッチしてね！</p>
+    </div>
+
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="message">やったね！</div>
+    </div>
+
+    <div class="controls">
+        <button class="btn" onclick="resetGame()">もういちど やる</button>
+        <button class="btn" style="background-color: #9e9e9e; box-shadow: 0 4px 0 #616161;" onclick="location.href='../index.html'">もどる</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const messageDiv = document.getElementById('message');
+
+        // ナエトルの点の座標 (1-20) - 500x600ベース
+        const points = [
+            { x: 250, y: 50 },  // 1: 頭の芽の先
+            { x: 250, y: 120 }, // 2: 芽の付け根
+            { x: 350, y: 150 }, // 3: 右頭上
+            { x: 400, y: 250 }, // 4: 右頬
+            { x: 350, y: 350 }, // 5: 首右
+            { x: 430, y: 400 }, // 6: 右前足先
+            { x: 380, y: 450 }, // 7: 右脇
+            { x: 400, y: 530 }, // 8: 右後ろ足先
+            { x: 320, y: 550 }, // 9: お腹後ろ
+            { x: 250, y: 560 }, // 10: お腹真ん中
+            { x: 180, y: 550 }, // 11: お腹前
+            { x: 100, y: 530 }, // 12: 左後ろ足先
+            { x: 120, y: 450 }, // 13: 左脇
+            { x: 70, y: 400 },  // 14: 左前足先
+            { x: 150, y: 350 }, // 15: 首左
+            { x: 100, y: 250 }, // 16: 左頬
+            { x: 150, y: 150 }, // 17: 左頭上
+            { x: 200, y: 130 }, // 18: 顔上左
+            { x: 250, y: 140 }, // 19: 顔上中
+            { x: 300, y: 130 }  // 20: 顔上右
+        ];
+
+        let currentIndex = 0;
+        let connectedPoints = [];
+        let isComplete = false;
+
+        function initCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            draw();
+        }
+
+        function draw() {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = rect.width / 500;
+            const scaleY = rect.height / 600;
+
+            ctx.clearRect(0, 0, rect.width, rect.height);
+
+            if (connectedPoints.length > 1) {
+                ctx.beginPath();
+                ctx.lineWidth = 5;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.strokeStyle = isComplete ? '#8BC34A' : '#333';
+                ctx.moveTo(connectedPoints[0].x * scaleX, connectedPoints[0].y * scaleY);
+                for (let i = 1; i < connectedPoints.length; i++) {
+                    ctx.lineTo(connectedPoints[i].x * scaleX, connectedPoints[i].y * scaleY);
+                }
+                if (isComplete) ctx.lineTo(points[0].x * scaleX, points[0].y * scaleY);
+                ctx.stroke();
+            }
+
+            if (isComplete) {
+                ctx.globalAlpha = 0.3;
+                ctx.fillStyle = '#C8E6C9';
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
+
+            drawFace(scaleX, scaleY);
+
+            points.forEach((p, i) => {
+                const x = p.x * scaleX;
+                const y = p.y * scaleY;
+                const isPast = (i < currentIndex || isComplete);
+
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = isPast ? '#333' : '#CCC';
+                ctx.fill();
+
+                ctx.font = 'bold 18px Arial';
+                ctx.fillStyle = isPast ? '#333' : '#999';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(i + 1, x, y - 20);
+            });
+        }
+
+        function drawFace(scaleX, scaleY) {
+            // 目
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(190 * scaleX, 240 * scaleY, 12 * scaleX, 0, Math.PI * 2);
+            ctx.arc(310 * scaleX, 240 * scaleY, 12 * scaleX, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(186 * scaleX, 236 * scaleY, 4 * scaleX, 0, Math.PI * 2);
+            ctx.arc(306 * scaleX, 236 * scaleY, 4 * scaleX, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 口
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(180 * scaleX, 300 * scaleY);
+            ctx.quadraticCurveTo(250 * scaleX, 330 * scaleY, 320 * scaleX, 300 * scaleY);
+            ctx.stroke();
+
+            // 甲羅の境界線（完成時）
+            if (isComplete) {
+                ctx.strokeStyle = '#558B2F';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(150 * scaleX, 350 * scaleY);
+                ctx.lineTo(350 * scaleX, 350 * scaleY);
+                ctx.stroke();
+            }
+        }
+
+        function handleTouch(e) {
+            if (isComplete) return;
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches ? e.touches[0] : e;
+            const x = (touch.clientX - rect.left);
+            const y = (touch.clientY - rect.top);
+            const scaleX = rect.width / 500;
+            const scaleY = rect.height / 600;
+            const target = points[currentIndex];
+            const dist = Math.sqrt((x - target.x * scaleX)**2 + (y - target.y * scaleY)**2);
+            if (dist < 30) {
+                connectedPoints.push(target);
+                currentIndex++;
+                if (currentIndex >= points.length) {
+                    isComplete = true;
+                    messageDiv.style.display = 'block';
+                }
+                draw();
+            }
+        }
+
+        window.addEventListener('resize', initCanvas);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleTouch(e); }, { passive: false });
+        canvas.addEventListener('mousedown', handleTouch);
+        setTimeout(initCanvas, 100);
+
+        function resetGame() {
+            currentIndex = 0; connectedPoints = []; isComplete = false;
+            messageDiv.style.display = 'none'; draw();
+        }
+    </script>
+</body>
+</html>

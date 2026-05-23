@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>てんつなぎを えらぶ - めいちゃんのおべんきょうゲーム</title>
+    <style>
+        body {
+            font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+            text-align: center;
+            background-color: #f0fff0;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 { color: #4CAF50; margin-bottom: 30px; }
+        .menu {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .btn {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background-color: white;
+            color: #333;
+            text-decoration: none;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            border: 4px solid #eee;
+            transition: transform 0.2s;
+        }
+        .btn:active { transform: scale(0.95); }
+        .icon { font-size: 3rem; margin-bottom: 10px; }
+        .back-btn {
+            display: inline-block;
+            margin-top: 40px;
+            padding: 10px 30px;
+            background-color: #9e9e9e;
+            color: white;
+            text-decoration: none;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>どの ポケモンに する？</h1>
+    
+    <div class="menu">
+        <a href="Pikachu/index.html" class="btn" style="border-color: #FFDE00;">
+            <span class="icon">⚡️</span>
+            ピカチュウ
+        </a>
+        
+        <a href="Squirtle/index.html" class="btn" style="border-color: #0288D1;">
+            <span class="icon">🐢</span>
+            ゼニガメ
+        </a>
+
+        <a href="Turtwig/index.html" class="btn" style="border-color: #8BC34A;">
+            <span class="icon">🌱</span>
+            ナエトル
+        </a>
+    </div>
+    
+    <a href="../../index.html" class="back-btn">もどる</a>
+</body>
+</html>

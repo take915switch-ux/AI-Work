@@ -39,50 +39,21 @@
         }
         .btn:active { transform: scale(0.95); }
         .icon { font-size: 2.5rem; margin-bottom: 10px; }
-        .btn-sub {
-            width: 70%;
-            font-size: 1.2rem;
-            padding: 15px;
-            margin-top: -10px;
-            border-style: dashed;
-            display: none; /* 初期は隠す */
-        }
-        .category-group {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-        }
     </style>
 </head>
 <body>
     <h1>めいちゃんのおべんきょうゲーム</h1>
     
     <div class="menu">
-        <!-- たしざん -->
         <a href="Educational/Math/AdditionGame/index.html" class="btn">
             <span class="icon">🐭👑</span>
             たしざんぼうけん
         </a>
         
-        <!-- てんつなぎ（カテゴリ） -->
-        <div class="category-group">
-            <div class="btn" style="border-color: #4CAF50; cursor: default;">
-                <span class="icon">✏️</span>
-                てんつなぎ
-            </div>
-            <div style="display: flex; gap: 10px; width: 85%; max-width: 400px; justify-content: center;">
-                <a href="Educational/DotToDot/Pikachu/index.html" class="btn" style="border-color: #FFDE00; font-size: 1.2rem; padding: 10px;">
-                    <span class="icon" style="font-size: 1.5rem;">⚡️</span>
-                    ピカチュウ
-                </a>
-                <a href="Educational/DotToDot/Squirtle/index.html" class="btn" style="border-color: #0288D1; font-size: 1.2rem; padding: 10px;">
-                    <span class="icon" style="font-size: 1.5rem;">🐢</span>
-                    ゼニガメ
-                </a>
-            </div>
-        </div>
+        <a href="Educational/DotToDot/index.html" class="btn" style="border-color: #4CAF50;">
+            <span class="icon">✏️</span>
+            てんつなぎ
+        </a>
     </div>
     
     <p style="margin-top: 50px; color: #666;">iPadの「ホーム画面に追加」をしてあそんでね！</p>
