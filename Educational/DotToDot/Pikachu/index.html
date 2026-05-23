@@ -160,11 +160,31 @@
                 ctx.stroke();
             }
 
-            // 完成時の色塗り（簡易的）
+            // 完成時の色塗り
             if (isComplete) {
-                ctx.globalAlpha = 0.3;
-                ctx.fillStyle = '#FFEB3B';
+                // 体の黄色
+                ctx.globalAlpha = 0.8;
+                ctx.fillStyle = '#FFDE00';
                 ctx.fill();
+
+                // 耳の先の黒
+                ctx.globalAlpha = 1.0;
+                ctx.fillStyle = 'black';
+                
+                // 左耳の先 (点1付近)
+                ctx.beginPath();
+                ctx.moveTo(points[0].x * scaleX, points[0].y * scaleY);
+                ctx.lineTo(160 * scaleX, 130 * scaleY);
+                ctx.lineTo(125 * scaleX, 120 * scaleY);
+                ctx.fill();
+
+                // 右耳の先 (点5付近)
+                ctx.beginPath();
+                ctx.moveTo(points[4].x * scaleX, points[4].y * scaleY);
+                ctx.lineTo(340 * scaleX, 130 * scaleY);
+                ctx.lineTo(375 * scaleX, 120 * scaleY);
+                ctx.fill();
+                
                 ctx.globalAlpha = 1.0;
             }
 

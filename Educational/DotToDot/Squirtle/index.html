@@ -144,9 +144,24 @@
             }
 
             if (isComplete) {
-                ctx.globalAlpha = 0.3;
-                ctx.fillStyle = '#B2EBF2';
+                // 体の水色
+                ctx.globalAlpha = 0.8;
+                ctx.fillStyle = '#81D4FA';
                 ctx.fill();
+
+                // お腹の薄い黄色
+                ctx.beginPath();
+                ctx.moveTo(180 * scaleX, 270 * scaleY); // 首左
+                ctx.quadraticCurveTo(250 * scaleX, 300 * scaleY, 320 * scaleX, 270 * scaleY); // 首右
+                ctx.lineTo(350 * scaleX, 350 * scaleY); // 右脇
+                ctx.quadraticCurveTo(250 * scaleX, 550 * scaleY, 150 * scaleX, 530 * scaleY); // 下部
+                ctx.lineTo(80 * scaleX, 350 * scaleY); // 左脇
+                ctx.closePath();
+                ctx.fillStyle = '#FFF9C4';
+                ctx.fill();
+                ctx.stroke();
+
+                // 甲羅（背中側を想定して少し濃い色）
                 ctx.globalAlpha = 1.0;
             }
 

@@ -143,9 +143,30 @@
             }
 
             if (isComplete) {
-                ctx.globalAlpha = 0.3;
-                ctx.fillStyle = '#C8E6C9';
+                // 体の黄緑
+                ctx.globalAlpha = 0.8;
+                ctx.fillStyle = '#AED581';
                 ctx.fill();
+
+                // 顎〜お腹の黄色
+                ctx.beginPath();
+                ctx.moveTo(150 * scaleX, 350 * scaleY);
+                ctx.quadraticCurveTo(250 * scaleX, 380 * scaleY, 350 * scaleX, 350 * scaleY);
+                ctx.lineTo(350 * scaleX, 300 * scaleY);
+                ctx.quadraticCurveTo(250 * scaleX, 330 * scaleY, 150 * scaleX, 300 * scaleY);
+                ctx.closePath();
+                ctx.fillStyle = '#FFF59D';
+                ctx.fill();
+
+                // 芽の濃い緑
+                ctx.beginPath();
+                ctx.moveTo(250 * scaleX, 50 * scaleY);
+                ctx.quadraticCurveTo(270 * scaleX, 85 * scaleY, 250 * scaleX, 120 * scaleY);
+                ctx.quadraticCurveTo(230 * scaleX, 85 * scaleY, 250 * scaleX, 50 * scaleY);
+                ctx.fillStyle = '#388E3C';
+                ctx.fill();
+                ctx.stroke();
+                
                 ctx.globalAlpha = 1.0;
             }
 
