@@ -139,34 +139,42 @@
                 for (let i = 1; i < connectedPoints.length; i++) {
                     ctx.lineTo(connectedPoints[i].x * scaleX, connectedPoints[i].y * scaleY);
                 }
-                if (isComplete) ctx.lineTo(points[0].x * scaleX, points[0].y * scaleY);
-                ctx.stroke();
-            }
+                <div id="header">
+                    <h1>ゼニガメ てんつなぎ <span style="font-size: 0.6rem; opacity: 0.7;">v2.0</span></h1>
+                    <p style="margin: 5px 0 0 0; font-size: 0.9rem;">１から じゅんばんに タッチしてね！</p>
+                </div>
+                ...
+                        if (isComplete) {
+                            // 1. 体全体を水色
+                            ctx.globalAlpha = 1.0;
+                            ctx.fillStyle = '#81D4FA';
+                            ctx.fill();
 
-            if (isComplete) {
-                // 体の水色
-                ctx.globalAlpha = 0.8;
-                ctx.fillStyle = '#81D4FA';
-                ctx.fill();
+                            // 2. 甲羅の茶色 (外枠より内側)
+                            ctx.beginPath();
+                            ctx.moveTo(180 * scaleX, 270 * scaleY);
+                            ctx.lineTo(320 * scaleX, 270 * scaleY);
+                            ctx.lineTo(380 * scaleX, 450 * scaleY);
+                            ctx.lineTo(120 * scaleX, 450 * scaleY);
+                            ctx.closePath();
+                            ctx.fillStyle = '#A1887F';
+                            ctx.fill();
 
-                // お腹の薄い黄色
-                ctx.beginPath();
-                ctx.moveTo(180 * scaleX, 270 * scaleY); // 首左
-                ctx.quadraticCurveTo(250 * scaleX, 300 * scaleY, 320 * scaleX, 270 * scaleY); // 首右
-                ctx.lineTo(350 * scaleX, 350 * scaleY); // 右脇
-                ctx.quadraticCurveTo(250 * scaleX, 550 * scaleY, 150 * scaleX, 530 * scaleY); // 下部
-                ctx.lineTo(80 * scaleX, 350 * scaleY); // 左脇
-                ctx.closePath();
-                ctx.fillStyle = '#FFF9C4';
-                ctx.fill();
-                ctx.stroke();
+                            // 3. お腹の薄い黄色
+                            ctx.beginPath();
+                            ctx.moveTo(200 * scaleX, 320 * scaleY);
+                            ctx.quadraticCurveTo(250 * scaleX, 340 * scaleY, 300 * scaleX, 320 * scaleY);
+                            ctx.lineTo(330 * scaleX, 480 * scaleY);
+                            ctx.quadraticCurveTo(250 * scaleX, 510 * scaleY, 170 * scaleX, 480 * scaleY);
+                            ctx.closePath();
+                            ctx.fillStyle = '#FFF9C4';
+                            ctx.fill();
+                            ctx.strokeStyle = '#D4E157';
+                            ctx.lineWidth = 2;
+                            ctx.stroke();
+                        }
 
-                // 甲羅（背中側を想定して少し濃い色）
-                ctx.globalAlpha = 1.0;
-            }
-
-            drawFace(scaleX, scaleY);
-
+                        drawFace(scaleX, scaleY);
             points.forEach((p, i) => {
                 const x = p.x * scaleX;
                 const y = p.y * scaleY;
