@@ -144,7 +144,11 @@
                 ctx.fillStyle = isPast ? '#333' : '#CCC'; ctx.fill();
                 ctx.font = 'bold 18px Arial'; ctx.fillStyle = isPast ? '#333' : '#999';
                 ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText(i + 1, x, y - 20);
+                // Adjust position to avoid overlap
+                let offsetY = -20;
+                if (i === 1) offsetY = 20; // Move '2' down
+                if (i === 18) offsetY = -25; // Move '19' up
+                ctx.fillText(i + 1, x, y + offsetY);
             });
         }
 
