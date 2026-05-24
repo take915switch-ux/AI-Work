@@ -157,7 +157,7 @@
                 ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2);
                 ctx.fillStyle = isPast ? '#333' : '#CCC'; ctx.fill();
                 // 数字を少し小さく
-                if (!isComplete && (i % 2 === 0 || i === points.length - 1)) {
+                if (!isComplete) {
                     ctx.font = 'bold 12px Arial';
                     ctx.fillStyle = isPast ? '#333' : '#999';
                     ctx.fillText(i + 1, x, y - 10);
