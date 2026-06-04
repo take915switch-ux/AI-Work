@@ -668,6 +668,8 @@
         const arrowLen = Math.min(Math.abs(f) * 9, 900);
         impulseArrow.style.width = arrowLen + 'px';
         impulseArrow.style.transform = `translateX(-50%) rotate(${-phiDeg}deg)`;
+        // 矢印の先端（三角形）を表示するためにクラスを追加
+        impulseArrow.classList.add('arrow-right');
         
         // テキストの反転対策 (0-90°のとき180°回転させる)
         if (theta >= 0 && theta <= 90) {
