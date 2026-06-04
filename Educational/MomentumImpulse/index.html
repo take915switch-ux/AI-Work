@@ -458,7 +458,7 @@
         </div>
 
         <div id="impulse-arrow"><span id="impulse-text">力積 J</span></div>
-        <div id="velocity-arrow">速度 v</div>
+        <div id="velocity-arrow"><span id="velocity-text">速度 v</span></div>
         <div id="speech-bubble">運動量が変化！</div>
     </div>
 
@@ -567,6 +567,7 @@
     const impulseArrow = document.getElementById('impulse-arrow');
     const impulseText = document.getElementById('impulse-text');
     const velocityArrow = document.getElementById('velocity-arrow');
+    const velocityText = document.getElementById('velocity-text');
     const speechBubble = document.getElementById('speech-bubble');
     const startBtn = document.getElementById('start-btn');
     const resetBtn = document.getElementById('reset-btn');
@@ -690,7 +691,13 @@
         // 常に右向き基準で回転させる
         velocityArrow.classList.remove('v-arrow-left');
         velocityArrow.classList.add('v-arrow-right');
-        // updateElementPositionsで最終的なtransformを決定する
+
+        // 速度テキストの反転対策 (左向き vx < 0 のとき180°回転させる)
+        if (vxForArrow < 0) {
+            velocityText.style.transform = 'rotate(180deg)';
+        } else {
+            velocityText.style.transform = 'rotate(0deg)';
+        }
 
         const results = { m, v0, f, dt, theta, phiDeg, vxf, vyf, vFinal, vAngleDeg };
 
@@ -763,6 +770,17 @@
                 
                 impulseArrow.style.left = `0`; // transformで制御するため
                 impulseArrow.style.transform = `translate(${bxPx - 30 + offsetX}px, ${-ballY + offsetY}px) translateX(-50%) rotate(${-phiDeg}deg)`;
+                // 速度矢印の長さと向きも更新
+                const vTotalNow = Math.sqrt(currentVx*currentVx + currentVy*currentVy);
+                const vArrowLenNow = Math.min(vTotalNow * 18, 900);
+                velocityArrow.style.width = vArrowLenNow + 'px';
+                
+                // 速度テキストの反転対策
+                if (currentVx < 0) {
+                    velocityText.style.transform = 'rotate(180deg)';
+                } else {
+                    velocityText.style.transform = 'rotate(0deg)';
+                }
             } else {
                 // パンチ終了
                 impactPhase = 2;
