@@ -108,17 +108,19 @@
             position: absolute;
             bottom: 110px;
             left: 60%;
-            height: 10px;
+            height: 30px; /* 太くした */
             background-color: var(--secondary-color);
             display: none;
             align-items: center;
             justify-content: center;
             color: white;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 18px; /* 文字も大きく */
             border-radius: 5px;
             z-index: 15;
             transform: translateX(-50%);
+            box-shadow: 0 0 15px rgba(231, 76, 60, 0.5); /* 目立たせる */
+            border: 2px solid white;
         }
 
         #impulse-arrow::after {
@@ -127,19 +129,42 @@
             top: 50%;
             width: 0;
             height: 0;
-            border-top: 15px solid transparent;
-            border-bottom: 15px solid transparent;
-            margin-top: -15px;
+            border-top: 25px solid transparent;
+            border-bottom: 25px solid transparent;
+            margin-top: -25px;
         }
 
         .arrow-right::after {
-            right: -20px;
-            border-left: 20px solid var(--secondary-color);
+            right: -30px;
+            border-left: 30px solid var(--secondary-color);
         }
 
         .arrow-left::after {
-            left: -20px;
-            border-right: 20px solid var(--secondary-color);
+            left: -30px;
+            border-right: 30px solid var(--secondary-color);
+        }
+
+        /* 再生速度ボタン */
+        .speed-controls {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .speed-btn {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            background: #eee;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .speed-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
         }
 
         #speech-bubble {
@@ -349,6 +374,17 @@
                     <label style="font-weight: normal;"><input type="radio" name="direction" value="-1"> 逆向き (-)</label>
                 </div>
             </div>
+            <div class="control-group">
+                <label>再生速度</label>
+                <div class="speed-controls" id="speed-container">
+                    <button class="speed-btn" data-speed="0.1">0.1x</button>
+                    <button class="speed-btn" data-speed="0.3">0.3x</button>
+                    <button class="speed-btn" data-speed="0.5">0.5x</button>
+                    <button class="speed-btn active" data-speed="1.0">1.0x</button>
+                    <button class="speed-btn" data-speed="1.5">1.5x</button>
+                    <button class="speed-btn" data-speed="2.0">2.0x</button>
+                </div>
+            </div>
             <div class="button-group">
                 <button id="start-btn">スタート</button>
                 <button id="reset-btn">リセット</button>
@@ -425,7 +461,18 @@
     let isRunning = false;
     let ballX = 0; // ボールの位置 (パーセント)
     let currentV = 0; // 現在の速度 [m/s]
-    let hasImpacted = false;
+    let impactPhase = 0; // 0: pre, 1: impacting, 2: post
+    let impactStartTime = 0;
+    let playbackSpeed = 1.0;
+
+    // 再生速度ボタンのイベント
+    document.querySelectorAll('.speed-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            playbackSpeed = parseFloat(e.target.dataset.speed);
+        });
+    });
 
     // 初期化と計算
     function updateCalculations() {
@@ -453,7 +500,7 @@
         resV.textContent = vFinal.toFixed(2);
 
         // 矢印の向きと長さを更新
-        const arrowLen = Math.min(Math.abs(f) * 2, 200);
+        const arrowLen = Math.min(Math.abs(f) * 3, 300); // 少し大きく
         impulseArrow.style.width = arrowLen + 'px';
         if (dir > 0) {
             impulseArrow.classList.remove('arrow-left');
@@ -476,34 +523,47 @@
     function animate(timestamp) {
         if (!isRunning) return;
 
-        const { vFinal } = updateCalculations();
+        const { v0, dt, vFinal } = updateCalculations();
         const containerWidth = document.getElementById('animation-container').clientWidth;
         
-        // 1フレームあたりの移動（簡易的な実装）
-        // 60fps想定で、秒速 v [m/s] -> v * pxPerMeter / 60 [px/frame]
-        // パーセントに直すと (v * pxPerMeter / 60) / containerWidth * 100
-        const deltaX = (currentV * pxPerMeter / 60) / containerWidth * 100;
+        // 速度計算
+        let displayV = currentV;
+        
+        if (impactPhase === 1) {
+            // パンチ中
+            const elapsed = (timestamp - impactStartTime) / 1000; // 秒
+            const durationInSim = dt / playbackSpeed; // シミュレーション上のパンチ時間
+            
+            if (elapsed < durationInSim) {
+                // 徐々に速度を変える（等加速度運動）
+                const progress = elapsed / durationInSim;
+                displayV = v0 + (vFinal - v0) * progress;
+            } else {
+                // パンチ終了
+                impactPhase = 2;
+                currentV = vFinal;
+                displayV = vFinal;
+                
+                // 表示オフ
+                glove.style.transform = 'translateX(-50%)';
+                impulseArrow.style.display = 'none';
+            }
+        }
+
+        // 移動
+        const deltaX = (displayV * pxPerMeter / 60 * playbackSpeed) / containerWidth * 100;
         ballX += deltaX;
 
-        // パンチ判定
-        if (!hasImpacted && ballX >= impactXPercent - 5) {
-            hasImpacted = true;
-            currentV = vFinal; // 速度変化
+        // パンチ開始判定
+        if (impactPhase === 0 && ballX >= impactXPercent - 5) {
+            impactPhase = 1;
+            impactStartTime = timestamp;
             
-            // パンチアクション
-            glove.style.transform = 'translateX(-50%) scale(1.2)';
+            // パンチアクション開始
+            glove.style.transform = 'translateX(-50%) scale(1.3)';
             impulseArrow.style.display = 'flex';
             speechBubble.style.transform = 'translate(-50%, -50%) scale(1)';
             
-            setTimeout(() => {
-                glove.style.transform = 'translateX(-50%)';
-                impulseArrow.style.opacity = '0';
-                setTimeout(() => {
-                    impulseArrow.style.display = 'none';
-                    impulseArrow.style.opacity = '1';
-                }, 500);
-            }, 200);
-
             setTimeout(() => {
                 speechBubble.style.transform = 'translate(-50%, -50%) scale(0)';
             }, 2000);
@@ -512,7 +572,7 @@
         ball.style.left = ballX + '%';
 
         // 画面外に出たら停止
-        if (ballX > 110 || ballX < -10) {
+        if (ballX > 110 || ballX < -15) {
             isRunning = false;
         } else {
             animationId = requestAnimationFrame(animate);
@@ -526,7 +586,7 @@
         const { v0 } = updateCalculations();
         ballX = 0;
         currentV = v0;
-        hasImpacted = false;
+        impactPhase = 0;
         isRunning = true;
         
         ball.style.left = ballX + '%';
@@ -542,8 +602,9 @@
         cancelAnimationFrame(animationId);
         ballX = 0;
         ball.style.left = ballX + '%';
-        hasImpacted = false;
+        impactPhase = 0;
         impulseArrow.style.display = 'none';
+        glove.style.transform = 'translateX(-50%)';
         speechBubble.style.transform = 'translate(-50%, -50%) scale(0)';
         updateCalculations();
     });
