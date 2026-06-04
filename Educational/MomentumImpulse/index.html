@@ -112,7 +112,7 @@
 
         #impulse-arrow {
             position: absolute;
-            bottom: 110px;
+            bottom: 145px; /* 上に移動 (110 -> 145) */
             left: 0; /* transformで制御 */
             height: 30px;
             background-color: var(--secondary-color);
@@ -147,6 +147,45 @@
         .arrow-left::after {
             left: -30px;
             border-right: 30px solid var(--secondary-color);
+        }
+
+        #velocity-arrow {
+            position: absolute;
+            bottom: 115px; /* ボールのすぐ上 */
+            left: 0;
+            height: 20px;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            border-radius: 4px;
+            z-index: 14;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
+            border: 1px solid white;
+        }
+
+        #velocity-arrow::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 0;
+            height: 0;
+            border-top: 15px solid transparent;
+            border-bottom: 15px solid transparent;
+            margin-top: -15px;
+        }
+
+        .v-arrow-right::after {
+            right: -20px;
+            border-left: 20px solid var(--primary-color);
+        }
+
+        .v-arrow-left::after {
+            left: -20px;
+            border-right: 20px solid var(--primary-color);
         }
 
         /* 再生速度ボタン */
@@ -221,7 +260,7 @@
         }
 
         #ball-label {
-            bottom: 140px;
+            bottom: 185px; /* さらに上に移動 (140 -> 185) */
             left: 0;
         }
 
@@ -409,6 +448,7 @@
         </div>
 
         <div id="impulse-arrow">力積 J</div>
+        <div id="velocity-arrow">速度 v</div>
         <div id="speech-bubble">運動量が変化！</div>
     </div>
 
@@ -515,6 +555,7 @@
     const glove = document.getElementById('glove-container');
     const gloveLabel = document.getElementById('glove-label');
     const impulseArrow = document.getElementById('impulse-arrow');
+    const velocityArrow = document.getElementById('velocity-arrow');
     const speechBubble = document.getElementById('speech-bubble');
     const startBtn = document.getElementById('start-btn');
     const resetBtn = document.getElementById('reset-btn');
@@ -607,6 +648,18 @@
             impulseArrow.classList.add('arrow-left');
         }
 
+        // 速度矢印の向きと長さを更新
+        const vForArrow = isRunning ? currentV : v0;
+        const vArrowLen = Math.min(Math.abs(vForArrow) * 18, 900); // 5m/s -> 90px (10N -> 90px と同じ)
+        velocityArrow.style.width = vArrowLen + 'px';
+        if (vForArrow >= 0) {
+            velocityArrow.classList.remove('v-arrow-left');
+            velocityArrow.classList.add('v-arrow-right');
+        } else {
+            velocityArrow.classList.remove('v-arrow-right');
+            velocityArrow.classList.add('v-arrow-left');
+        }
+
         return { m, v0, f, dt, dir, vFinal };
     }
 
@@ -619,6 +672,15 @@
         // ボールとラベルの位置を更新 (transformを使用)
         ball.style.transform = `translateX(${bxPx}px) translateX(-100%)`;
         ballLabel.style.transform = `translateX(${bxPx - 30}px) translateX(-50%)`;
+        
+        // 速度矢印の位置を更新
+        const vArrowLen = parseFloat(velocityArrow.style.width);
+        const vForArrow = isRunning ? currentV : parseFloat(v0Slider.value);
+        if (vForArrow >= 0) {
+            velocityArrow.style.transform = `translateX(${bxPx - 30 + vArrowLen/2}px) translateX(-50%)`;
+        } else {
+            velocityArrow.style.transform = `translateX(${bxPx - 30 - vArrowLen/2}px) translateX(-50%)`;
+        }
 
         if (impactPhase !== 1) {
             // 衝突中以外：グローブは定位置
@@ -653,13 +715,24 @@
                 const progress = elapsed / durationInSim;
                 displayV = v0 + (vFinal - v0) * progress;
 
-                // 矢印をボールの位置に追従させる
+                // 矢印（力積）をボールの位置に追従させる
                 const arrowLen = parseFloat(impulseArrow.style.width);
                 const bxPx = (ballX / 100) * containerWidth;
                 if (dir > 0) {
                     impulseArrow.style.left = `calc(${bxPx - 30}px + ${arrowLen/2}px)`;
                 } else {
                     impulseArrow.style.left = `calc(${bxPx - 30}px - ${arrowLen/2}px)`;
+                }
+
+                // 速度矢印の長さと向きも更新
+                const vArrowLenNow = Math.min(Math.abs(displayV) * 18, 900);
+                velocityArrow.style.width = vArrowLenNow + 'px';
+                if (displayV >= 0) {
+                    velocityArrow.classList.remove('v-arrow-left');
+                    velocityArrow.classList.add('v-arrow-right');
+                } else {
+                    velocityArrow.classList.remove('v-arrow-right');
+                    velocityArrow.classList.add('v-arrow-left');
                 }
             } else {
                 // パンチ終了
