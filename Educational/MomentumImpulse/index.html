@@ -586,8 +586,8 @@
         
         if (!isRunning) {
             overlayV.textContent = v0.toFixed(2);
-            ballX = 5;
-            updateElementPositions(5);
+            ballX = 20;
+            updateElementPositions(20);
         }
 
         resJ.textContent = Math.abs(j).toFixed(2);
@@ -705,12 +705,12 @@
         if (isRunning) return;
         
         const { v0 } = updateCalculations();
-        ballX = 5;
+        ballX = 20;
         currentV = v0;
         impactPhase = 0;
         isRunning = true;
         
-        updateElementPositions(5);
+        updateElementPositions(20);
         impulseArrow.style.display = 'none';
         speechBubble.style.transform = 'translate(-50%, -50%) scale(0)';
         
@@ -721,9 +721,9 @@
     resetBtn.addEventListener('click', () => {
         isRunning = false;
         cancelAnimationFrame(animationId);
-        ballX = 5;
+        ballX = 20;
         impactPhase = 0;
-        updateElementPositions(5);
+        updateElementPositions(20);
         impulseArrow.style.display = 'none';
         speechBubble.style.transform = 'translate(-50%, -50%) scale(0)';
         updateCalculations();
