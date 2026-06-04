@@ -596,7 +596,7 @@
         resV.textContent = vFinal.toFixed(2);
 
         // 矢印の向きと長さを更新
-        const arrowLen = Math.min(Math.abs(f) * 3, 300);
+        const arrowLen = Math.min(Math.abs(f) * 9, 900); // さらに大きく (3 -> 9, 300 -> 900)
         impulseArrow.style.width = arrowLen + 'px';
         if (dir > 0) {
             impulseArrow.classList.remove('arrow-left');
