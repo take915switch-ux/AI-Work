@@ -434,15 +434,15 @@
             <div class="control-group">
                 <label>パンチの力 $F$ [N]</label>
                 <div class="slider-row">
-                    <input type="range" id="f-slider" min="0" max="100" step="1" value="5">
-                    <span class="value-display" id="f-val">5</span>
+                    <input type="range" id="f-slider" min="0" max="100" step="1" value="10">
+                    <span class="value-display" id="f-val">10</span>
                 </div>
             </div>
             <div class="control-group">
                 <label>力を与える時間 $\Delta t$ [s]</label>
                 <div class="slider-row">
-                    <input type="range" id="dt-slider" min="0.01" max="2.00" step="0.01" value="2.00">
-                    <span class="value-display" id="dt-val">2.00</span>
+                    <input type="range" id="dt-slider" min="0.01" max="2.00" step="0.01" value="1.00">
+                    <span class="value-display" id="dt-val">1.00</span>
                 </div>
             </div>
             <div class="control-group">
@@ -586,7 +586,8 @@
         
         if (!isRunning) {
             overlayV.textContent = v0.toFixed(2);
-            updateElementPositions(0);
+            ballX = 5;
+            updateElementPositions(5);
         }
 
         resJ.textContent = Math.abs(j).toFixed(2);
@@ -704,12 +705,12 @@
         if (isRunning) return;
         
         const { v0 } = updateCalculations();
-        ballX = 0;
+        ballX = 5;
         currentV = v0;
         impactPhase = 0;
         isRunning = true;
         
-        updateElementPositions(0);
+        updateElementPositions(5);
         impulseArrow.style.display = 'none';
         speechBubble.style.transform = 'translate(-50%, -50%) scale(0)';
         
@@ -720,9 +721,9 @@
     resetBtn.addEventListener('click', () => {
         isRunning = false;
         cancelAnimationFrame(animationId);
-        ballX = 0;
+        ballX = 5;
         impactPhase = 0;
-        updateElementPositions(0);
+        updateElementPositions(5);
         impulseArrow.style.display = 'none';
         speechBubble.style.transform = 'translate(-50%, -50%) scale(0)';
         updateCalculations();
