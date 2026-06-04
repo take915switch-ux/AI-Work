@@ -622,12 +622,6 @@
         const dt = parseFloat(dtSlider.value);
         const theta = parseFloat(thetaSlider.value);
 
-        // 物理的な角度 (phi): 0°が逆向き(Left), 180°が同じ向き(Right)
-        // ユーザーのtheta=0がLeft(180°), theta=180がRight(0°)
-        // phi = 180 - theta とすると:
-        // theta=0   => phi=180 (Left)
-        // theta=90  => phi=90  (Up)
-        // theta=180 => phi=0   (Right)
         const phiDeg = 180 - theta;
         const phiRad = phiDeg * Math.PI / 180;
         
@@ -652,7 +646,6 @@
         
         if (!isRunning) {
             overlayV.textContent = v0.toFixed(2);
-            ballX = 20;
         }
 
         resJ.textContent = Math.abs(jx).toFixed(2);
@@ -664,11 +657,7 @@
         // 矢印（力積）の向きと長さを更新
         const arrowLen = Math.min(Math.abs(f) * 9, 900);
         impulseArrow.style.width = arrowLen + 'px';
-        // 矢印自体の回転 (phiDeg)
         impulseArrow.style.transform = `translateX(-50%) rotate(${-phiDeg}deg)`;
-        // 常に右向きの矢印画像として扱い、回転で制御
-        impulseArrow.classList.remove('arrow-left');
-        impulseArrow.classList.add('arrow-right');
 
         // 速度矢印の向きと長さを更新
         const vForArrow = isRunning ? currentV : v0;
@@ -682,24 +671,36 @@
             velocityArrow.classList.add('v-arrow-left');
         }
 
+        const results = { m, v0, f, dt, theta, phiDeg, vFinal };
+
         // すべてのサイズが決まった後に位置を更新
         if (!isRunning) {
-            updateElementPositions(ballX);
+            updateElementPositions(ballX, results);
         }
 
-        return { m, v0, f, dt, theta, phiDeg, vFinal };
+        return results;
     }
 
-    function updateElementPositions(bx) {
+    function updateElementPositions(bx, calcResults) {
         const containerWidth = document.getElementById('animation-container').clientWidth;
+        if (!containerWidth) return; // コンテナがまだ描画されていない場合
+
         const bxPx = (bx / 100) * containerWidth;
         const impactXPx = (impactXPercent / 100) * containerWidth;
-        const { phiDeg } = updateCalculations();
+        
+        // phiDegを取得（引数から、なければ再計算）
+        let phiDeg;
+        if (calcResults) {
+            phiDeg = calcResults.phiDeg;
+        } else {
+            const theta = parseFloat(thetaSlider.value);
+            phiDeg = 180 - theta;
+        }
 
         ball.style.transform = `translateX(${bxPx}px) translateX(-100%)`;
         ballLabel.style.transform = `translateX(${bxPx - 30}px) translateX(-50%)`;
         
-        const vArrowLen = parseFloat(velocityArrow.style.width);
+        const vArrowLen = parseFloat(velocityArrow.style.width) || 0;
         const vForArrow = isRunning ? currentV : parseFloat(v0Slider.value);
         if (vForArrow >= 0) {
             velocityArrow.style.transform = `translateX(${bxPx - 30 + vArrowLen/2}px) translateX(-50%)`;
@@ -723,7 +724,8 @@
     function animate(timestamp) {
         if (!isRunning) return;
 
-        const { v0, dt, vFinal, dir } = updateCalculations();
+        const results = updateCalculations();
+        const { v0, dt, vFinal, phiDeg } = results;
         const containerWidth = document.getElementById('animation-container').clientWidth;
         
         let displayV = currentV;
@@ -740,11 +742,13 @@
                 // 矢印（力積）をボールの位置に追従させる
                 const arrowLen = parseFloat(impulseArrow.style.width);
                 const bxPx = (ballX / 100) * containerWidth;
-                if (dir > 0) {
-                    impulseArrow.style.left = `calc(${bxPx - 30}px + ${arrowLen/2}px)`;
-                } else {
-                    impulseArrow.style.left = `calc(${bxPx - 30}px - ${arrowLen/2}px)`;
-                }
+                
+                // 力積矢印の水平オフセット計算
+                const phiRad = phiDeg * Math.PI / 180;
+                const offsetX = (arrowLen / 2) * Math.cos(phiRad);
+                // 向きが phi=180 (left) のとき cos(180)=-1, offsetX < 0.
+                // 向きが phi=0 (right) のとき cos(0)=1, offsetX > 0.
+                impulseArrow.style.left = `calc(${bxPx - 30 + offsetX}px)`;
 
                 // 速度矢印の長さと向きも更新
                 const vArrowLenNow = Math.min(Math.abs(displayV) * 18, 900);
@@ -761,33 +765,24 @@
                 impactPhase = 2;
                 currentV = vFinal;
                 displayV = vFinal;
-                
                 impulseArrow.style.display = 'none';
-                // updateElementPositions 内で phase 2 の位置に直される
             }
         }
 
         overlayV.textContent = displayV.toFixed(2);
-
         const deltaX = (displayV * pxPerMeter / 60 * playbackSpeed) / containerWidth * 100;
         ballX += deltaX;
 
-        updateElementPositions(ballX);
+        updateElementPositions(ballX, results);
 
-        // パンチ開始判定
         if (impactPhase === 0 && ballX >= impactXPercent - 2) {
             impactPhase = 1;
             impactStartTime = timestamp;
-            
             impulseArrow.style.display = 'flex';
             speechBubble.style.transform = 'translate(-50%, -50%) scale(1)';
-            
-            setTimeout(() => {
-                speechBubble.style.transform = 'translate(-50%, -50%) scale(0)';
-            }, 2000);
+            setTimeout(() => { speechBubble.style.transform = 'translate(-50%, -50%) scale(0)'; }, 2000);
         }
 
-        // 画面外に出たら停止
         if (ballX > 130 || ballX < -50) {
             isRunning = false;
         } else {
@@ -798,17 +793,14 @@
     // スタート
     startBtn.addEventListener('click', () => {
         if (isRunning) return;
-        
-        const { v0 } = updateCalculations();
+        const results = updateCalculations();
         ballX = 20;
-        currentV = v0;
+        currentV = results.v0;
         impactPhase = 0;
         isRunning = true;
-        
-        updateElementPositions(20);
+        updateElementPositions(20, results);
         impulseArrow.style.display = 'none';
         speechBubble.style.transform = 'translate(-50%, -50%) scale(0)';
-        
         animationId = requestAnimationFrame(animate);
     });
 
@@ -818,14 +810,17 @@
         cancelAnimationFrame(animationId);
         ballX = 20;
         impactPhase = 0;
-        updateElementPositions(20);
+        const results = updateCalculations();
+        updateElementPositions(20, results);
         impulseArrow.style.display = 'none';
         speechBubble.style.transform = 'translate(-50%, -50%) scale(0)';
-        updateCalculations();
     });
 
-    // 初期計算
-    updateCalculations();
+    // 初期計算と配置
+    window.addEventListener('load', () => {
+        ballX = 20;
+        updateCalculations();
+    });
 </script>
 
 </body>
