@@ -260,7 +260,7 @@
         }
 
         #ball-label {
-            bottom: 185px; /* さらに上に移動 (140 -> 185) */
+            bottom: 215px; /* 2行になったのでさらに上に移動 (185 -> 215) */
             left: 0;
         }
 
@@ -409,6 +409,11 @@
     <div id="animation-container">
         <!-- 情報表示 -->
         <div id="ball-label" class="on-screen-label">
+            <div class="label-row">
+                <span>$m = $</span>
+                <span id="overlay-m">1.0</span>
+                <span>kg</span>
+            </div>
             <div class="label-row">
                 <span>$v = $</span>
                 <span id="overlay-v">5.00</span>
@@ -561,6 +566,7 @@
     const resetBtn = document.getElementById('reset-btn');
 
     // オーバーレイ
+    const overlayM = document.getElementById('overlay-m');
     const overlayV = document.getElementById('overlay-v');
     const overlayF = document.getElementById('overlay-f');
     const overlayDt = document.getElementById('overlay-dt');
@@ -622,6 +628,7 @@
         fValDisp.textContent = f.toFixed(0);
         dtValDisp.textContent = dt.toFixed(2);
 
+        overlayM.textContent = m.toFixed(1);
         overlayF.textContent = f.toFixed(0);
         overlayDt.textContent = dt.toFixed(2);
         
