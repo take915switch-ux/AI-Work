@@ -457,7 +457,7 @@
             </svg>
         </div>
 
-        <div id="impulse-arrow">力積 J</div>
+        <div id="impulse-arrow"><span id="impulse-text">力積 J</span></div>
         <div id="velocity-arrow">速度 v</div>
         <div id="speech-bubble">運動量が変化！</div>
     </div>
@@ -565,6 +565,7 @@
     const glove = document.getElementById('glove-container');
     const gloveLabel = document.getElementById('glove-label');
     const impulseArrow = document.getElementById('impulse-arrow');
+    const impulseText = document.getElementById('impulse-text');
     const velocityArrow = document.getElementById('velocity-arrow');
     const speechBubble = document.getElementById('speech-bubble');
     const startBtn = document.getElementById('start-btn');
@@ -667,6 +668,13 @@
         const arrowLen = Math.min(Math.abs(f) * 9, 900);
         impulseArrow.style.width = arrowLen + 'px';
         impulseArrow.style.transform = `translateX(-50%) rotate(${-phiDeg}deg)`;
+        
+        // テキストの反転対策 (0-90°のとき180°回転させる)
+        if (theta >= 0 && theta <= 90) {
+            impulseText.style.transform = 'rotate(180deg)';
+        } else {
+            impulseText.style.transform = 'rotate(0deg)';
+        }
 
         // 速度矢印の向きと長さを更新
         const vxForArrow = isRunning ? currentVx : v0;
