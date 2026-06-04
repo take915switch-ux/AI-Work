@@ -423,13 +423,18 @@
         <div id="glove-label" class="on-screen-label">
             <div class="label-row">
                 <span>$F = $</span>
-                <span id="overlay-f">5</span>
+                <span id="overlay-f">10</span>
                 <span>N</span>
             </div>
             <div class="label-row">
                 <span>$\Delta t = $</span>
                 <span id="overlay-dt">1.00</span>
                 <span>s</span>
+            </div>
+            <div class="label-row">
+                <span>$\theta = $</span>
+                <span id="overlay-theta">0</span>
+                <span>°</span>
             </div>
         </div>
         
@@ -491,10 +496,10 @@
                 </div>
             </div>
             <div class="control-group">
-                <label>力の向き</label>
-                <div class="radio-group">
-                    <label style="font-weight: normal;"><input type="radio" name="direction" value="1"> 同じ向き (+)</label>
-                    <label style="font-weight: normal;"><input type="radio" name="direction" value="-1" checked> 逆向き (-)</label>
+                <label>力の角度 $\theta$ [°] (0°=逆向き, 180°=同じ向き)</label>
+                <div class="slider-row">
+                    <input type="range" id="theta-slider" min="0" max="180" step="1" value="0">
+                    <span class="value-display" id="theta-val">0</span>
                 </div>
             </div>
             <div class="control-group">
@@ -570,18 +575,20 @@
     const overlayV = document.getElementById('overlay-v');
     const overlayF = document.getElementById('overlay-f');
     const overlayDt = document.getElementById('overlay-dt');
+    const overlayTheta = document.getElementById('overlay-theta');
 
     // スライダーと表示用
     const mSlider = document.getElementById('m-slider');
     const v0Slider = document.getElementById('v0-slider');
     const fSlider = document.getElementById('f-slider');
     const dtSlider = document.getElementById('dt-slider');
-    const dirRadios = document.getElementsByName('direction');
+    const thetaSlider = document.getElementById('theta-slider');
 
     const mValDisp = document.getElementById('m-val');
     const v0ValDisp = document.getElementById('v0-val');
     const fValDisp = document.getElementById('f-val');
     const dtValDisp = document.getElementById('dt-val');
+    const thetaValDisp = document.getElementById('theta-val');
 
     // 結果表示用
     const resJ = document.getElementById('res-j');
@@ -613,11 +620,20 @@
         const v0 = parseFloat(v0Slider.value);
         const f = parseFloat(fSlider.value);
         const dt = parseFloat(dtSlider.value);
-        let dir = 1;
-        for (const r of dirRadios) { if (r.checked) dir = parseInt(r.value); }
+        const theta = parseFloat(thetaSlider.value);
 
-        const j = f * dt * dir;
-        const dp = j;
+        // 物理的な角度 (phi): 0°が逆向き(Left), 180°が同じ向き(Right)
+        // ユーザーのtheta=0がLeft(180°), theta=180がRight(0°)
+        // phi = 180 - theta とすると:
+        // theta=0   => phi=180 (Left)
+        // theta=90  => phi=90  (Up)
+        // theta=180 => phi=0   (Right)
+        const phiDeg = 180 - theta;
+        const phiRad = phiDeg * Math.PI / 180;
+        
+        const fx = f * Math.cos(phiRad);
+        const jx = fx * dt;
+        const dp = jx;
         const p0 = m * v0;
         const p = p0 + dp;
         const vFinal = p / m;
@@ -627,36 +643,36 @@
         v0ValDisp.textContent = v0.toFixed(0);
         fValDisp.textContent = f.toFixed(0);
         dtValDisp.textContent = dt.toFixed(2);
+        thetaValDisp.textContent = theta;
 
         overlayM.textContent = m.toFixed(1);
         overlayF.textContent = f.toFixed(0);
         overlayDt.textContent = dt.toFixed(2);
+        overlayTheta.textContent = theta;
         
         if (!isRunning) {
             overlayV.textContent = v0.toFixed(2);
             ballX = 20;
         }
 
-        resJ.textContent = Math.abs(j).toFixed(2);
+        resJ.textContent = Math.abs(jx).toFixed(2);
         resDp.textContent = Math.abs(dp).toFixed(2);
         resP0.textContent = p0.toFixed(2);
         resP.textContent = Math.abs(p).toFixed(2);
         resV.textContent = vFinal.toFixed(2);
 
-        // 矢印の向きと長さを更新
-        const arrowLen = Math.min(Math.abs(f) * 9, 900); // さらに大きく (3 -> 9, 300 -> 900)
+        // 矢印（力積）の向きと長さを更新
+        const arrowLen = Math.min(Math.abs(f) * 9, 900);
         impulseArrow.style.width = arrowLen + 'px';
-        if (dir > 0) {
-            impulseArrow.classList.remove('arrow-left');
-            impulseArrow.classList.add('arrow-right');
-        } else {
-            impulseArrow.classList.remove('arrow-right');
-            impulseArrow.classList.add('arrow-left');
-        }
+        // 矢印自体の回転 (phiDeg)
+        impulseArrow.style.transform = `translateX(-50%) rotate(${-phiDeg}deg)`;
+        // 常に右向きの矢印画像として扱い、回転で制御
+        impulseArrow.classList.remove('arrow-left');
+        impulseArrow.classList.add('arrow-right');
 
         // 速度矢印の向きと長さを更新
         const vForArrow = isRunning ? currentV : v0;
-        const vArrowLen = Math.min(Math.abs(vForArrow) * 18, 900); // 5m/s -> 90px (10N -> 90px と同じ)
+        const vArrowLen = Math.min(Math.abs(vForArrow) * 18, 900);
         velocityArrow.style.width = vArrowLen + 'px';
         if (vForArrow >= 0) {
             velocityArrow.classList.remove('v-arrow-left');
@@ -666,25 +682,23 @@
             velocityArrow.classList.add('v-arrow-left');
         }
 
-        // すべてのサイズが決まった後に位置を更新 (初回ロード時のズレ防止)
+        // すべてのサイズが決まった後に位置を更新
         if (!isRunning) {
             updateElementPositions(ballX);
         }
 
-        return { m, v0, f, dt, dir, vFinal };
+        return { m, v0, f, dt, theta, phiDeg, vFinal };
     }
 
     function updateElementPositions(bx) {
-        // コンテナの幅を取得
         const containerWidth = document.getElementById('animation-container').clientWidth;
         const bxPx = (bx / 100) * containerWidth;
         const impactXPx = (impactXPercent / 100) * containerWidth;
+        const { phiDeg } = updateCalculations();
 
-        // ボールとラベルの位置を更新 (transformを使用)
         ball.style.transform = `translateX(${bxPx}px) translateX(-100%)`;
         ballLabel.style.transform = `translateX(${bxPx - 30}px) translateX(-50%)`;
         
-        // 速度矢印の位置を更新
         const vArrowLen = parseFloat(velocityArrow.style.width);
         const vForArrow = isRunning ? currentV : parseFloat(v0Slider.value);
         if (vForArrow >= 0) {
@@ -694,19 +708,16 @@
         }
 
         if (impactPhase !== 1) {
-            // 衝突中以外：グローブは定位置
-            glove.style.transform = `translateX(${impactXPx}px) translateX(-50%)`;
+            glove.style.transform = `translateX(${impactXPx}px) translateX(-50%) rotate(${-phiDeg}deg)`;
             gloveLabel.style.transform = `translateX(${impactXPx}px) translateX(-110%)`;
         } else {
-            // 衝突中：グローブはボールに密着
-            glove.style.transform = `translateX(${bxPx}px) translateX(-50%) scale(1.3)`;
+            glove.style.transform = `translateX(${bxPx}px) translateX(-50%) scale(1.3) rotate(${-phiDeg}deg)`;
             gloveLabel.style.transform = `translateX(${bxPx}px) translateX(-110%)`;
         }
     }
 
     // スライダー変更時のイベント
-    [mSlider, v0Slider, fSlider, dtSlider].forEach(s => s.addEventListener('input', updateCalculations));
-    dirRadios.forEach(r => r.addEventListener('change', updateCalculations));
+    [mSlider, v0Slider, fSlider, dtSlider, thetaSlider].forEach(s => s.addEventListener('input', updateCalculations));
 
     // アニメーションループ
     function animate(timestamp) {
