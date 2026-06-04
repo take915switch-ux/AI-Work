@@ -3,7 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>運動量と力積の関係 - 物理シミュレーション</title>
+    <title>運動量と力積(一次元)</title>
+    <!-- MathJax for rendering LaTeX -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <style>
         :root {
             --primary-color: #3498db;
@@ -182,20 +191,32 @@
         }
 
         /* アニメーション内の情報表示 */
-        #overlay-info {
+        .on-screen-label {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.8);
-            padding: 10px;
-            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 5px 10px;
+            border-radius: 5px;
             border: 1px solid #ccc;
             z-index: 25;
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: bold;
             pointer-events: none;
+            white-space: nowrap;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
         }
-        .overlay-item { margin-bottom: 5px; }
+
+        #ball-label {
+            bottom: 120px;
+            left: 0;
+            transform: translateX(-50%);
+        }
+
+        #glove-label {
+            top: 80px;
+            left: calc(60% - 70px);
+            transform: translateX(-100%);
+            border-left: 4px solid var(--secondary-color);
+        }
 
         /* UIエリア */
         .controls-container {
@@ -334,11 +355,13 @@
 <main>
     <!-- アニメーションエリア -->
     <div id="animation-container">
-        <!-- 情報表示オーバーレイ -->
-        <div id="overlay-info">
-            <div class="overlay-item">速度 $v$: <span id="overlay-v">5.00</span> m/s</div>
-            <div class="overlay-item">設定 $F$: <span id="overlay-f">5</span> N</div>
-            <div class="overlay-item">設定 $\Delta t$: <span id="overlay-dt">1.00</span> s</div>
+        <!-- 情報表示 -->
+        <div id="ball-label" class="on-screen-label">
+            $v = $ <span id="overlay-v">5.00</span> m/s
+        </div>
+        <div id="glove-label" class="on-screen-label">
+            設定 $F = $ <span id="overlay-f">5</span> N<br>
+            設定 $\Delta t = $ <span id="overlay-dt">1.00</span> s
         </div>
         
         <div id="ground"></div>
@@ -458,11 +481,12 @@
 
 <script>
     // 定数と変数
-    const pxPerMeter = 20; // 1mあたりのピクセル数（アニメーション用スケール）
+    const pxPerMeter = 40; // 速度感を2倍にする (20 -> 40)
     const impactXPercent = 60; // パンチが起きる位置 [%]
 
     // DOM要素
     const ball = document.getElementById('ball');
+    const ballLabel = document.getElementById('ball-label');
     const glove = document.getElementById('glove-container');
     const impulseArrow = document.getElementById('impulse-arrow');
     const speechBubble = document.getElementById('speech-bubble');
@@ -533,7 +557,10 @@
 
         overlayF.textContent = f.toFixed(0);
         overlayDt.textContent = dt.toFixed(2);
-        if (!isRunning) overlayV.textContent = v0.toFixed(2);
+        if (!isRunning) {
+            overlayV.textContent = v0.toFixed(2);
+            ballLabel.style.left = '0%';
+        }
 
         resJ.textContent = Math.abs(j).toFixed(2);
         resDp.textContent = Math.abs(dp).toFixed(2);
@@ -605,6 +632,9 @@
         const deltaX = (displayV * pxPerMeter / 60 * playbackSpeed) / containerWidth * 100;
         ballX += deltaX;
 
+        // 球の速度表示を追従させる
+        ballLabel.style.left = `calc(${ballX}% - 30px)`;
+
         // パンチ開始判定
         if (impactPhase === 0 && ballX >= impactXPercent - 5) {
             impactPhase = 1;
@@ -623,7 +653,7 @@
         ball.style.left = ballX + '%';
 
         // 画面外に出たら停止
-        if (ballX > 110 || ballX < -15) {
+        if (ballX > 115 || ballX < -20) {
             isRunning = false;
         } else {
             animationId = requestAnimationFrame(animate);
@@ -641,6 +671,7 @@
         isRunning = true;
         
         ball.style.left = ballX + '%';
+        ballLabel.style.left = '0%';
         impulseArrow.style.display = 'none';
         speechBubble.style.transform = 'translate(-50%, -50%) scale(0)';
         
@@ -653,6 +684,7 @@
         cancelAnimationFrame(animationId);
         ballX = 0;
         ball.style.left = ballX + '%';
+        ballLabel.style.left = '0%';
         impactPhase = 0;
         impulseArrow.style.display = 'none';
         glove.style.transform = 'translateX(-50%)';
