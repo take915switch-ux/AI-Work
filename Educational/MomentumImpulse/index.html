@@ -599,8 +599,10 @@
 
     let animationId = null;
     let isRunning = false;
-    let ballX = 0; // ボールの位置 (パーセント)
-    let currentV = 0; // 現在の速度 [m/s]
+    let ballX = 0; // ボールのX位置 [%]
+    let ballY = 0; // ボールのY位置 [px] (上向き正)
+    let currentVx = 0; // 現在のX速度 [m/s]
+    let currentVy = 0; // 現在のY速度 [m/s]
     let impactPhase = 0; // 0: pre, 1: impacting, 2: post
     let impactStartTime = 0;
     let playbackSpeed = 1.0;
@@ -625,12 +627,19 @@
         const phiDeg = 180 - theta;
         const phiRad = phiDeg * Math.PI / 180;
         
-        const fx = f * Math.cos(phiRad);
-        const jx = fx * dt;
-        const dp = jx;
-        const p0 = m * v0;
-        const p = p0 + dp;
-        const vFinal = p / m;
+        // 2次元力積
+        const jx = f * Math.cos(phiRad) * dt;
+        const jy = f * Math.sin(phiRad) * dt;
+        
+        const p0x = m * v0;
+        const p0y = 0;
+        
+        const pfx = p0x + jx;
+        const pfy = p0y + jy;
+        
+        const vxf = pfx / m;
+        const vyf = pfy / m;
+        const vFinal = Math.sqrt(vxf*vxf + vyf*vyf);
 
         // UI更新
         mValDisp.textContent = m.toFixed(1);
@@ -648,10 +657,10 @@
             overlayV.textContent = v0.toFixed(2);
         }
 
-        resJ.textContent = Math.abs(jx).toFixed(2);
-        resDp.textContent = Math.abs(dp).toFixed(2);
-        resP0.textContent = p0.toFixed(2);
-        resP.textContent = Math.abs(p).toFixed(2);
+        resJ.textContent = Math.sqrt(jx*jx + jy*jy).toFixed(2);
+        resDp.textContent = Math.sqrt(jx*jx + jy*jy).toFixed(2);
+        resP0.textContent = p0x.toFixed(2);
+        resP.textContent = Math.sqrt(pfx*pfx + pfy*pfy).toFixed(2);
         resV.textContent = vFinal.toFixed(2);
 
         // 矢印（力積）の向きと長さを更新
@@ -660,60 +669,56 @@
         impulseArrow.style.transform = `translateX(-50%) rotate(${-phiDeg}deg)`;
 
         // 速度矢印の向きと長さを更新
-        const vForArrow = isRunning ? currentV : v0;
-        const vArrowLen = Math.min(Math.abs(vForArrow) * 18, 900);
-        velocityArrow.style.width = vArrowLen + 'px';
-        if (vForArrow >= 0) {
-            velocityArrow.classList.remove('v-arrow-left');
-            velocityArrow.classList.add('v-arrow-right');
-        } else {
-            velocityArrow.classList.remove('v-arrow-right');
-            velocityArrow.classList.add('v-arrow-left');
-        }
+        const vxForArrow = isRunning ? currentVx : v0;
+        const vyForArrow = isRunning ? currentVy : 0;
+        const vTotalForArrow = Math.sqrt(vxForArrow*vxForArrow + vyForArrow*vyForArrow);
+        const vArrowLen = Math.min(vTotalForArrow * 18, 900);
+        const vAngleDeg = Math.atan2(vyForArrow, vxForArrow) * 180 / Math.PI;
 
-        const results = { m, v0, f, dt, theta, phiDeg, vFinal };
+        velocityArrow.style.width = vArrowLen + 'px';
+        velocityArrow.style.transformOrigin = 'left center';
+        // 常に右向き基準で回転させる
+        velocityArrow.classList.remove('v-arrow-left');
+        velocityArrow.classList.add('v-arrow-right');
+        // updateElementPositionsで最終的なtransformを決定する
+
+        const results = { m, v0, f, dt, theta, phiDeg, vxf, vyf, vFinal, vAngleDeg };
 
         // すべてのサイズが決まった後に位置を更新
         if (!isRunning) {
-            updateElementPositions(ballX, results);
+            updateElementPositions(ballX, 0, results);
         }
 
         return results;
     }
 
-    function updateElementPositions(bx, calcResults) {
+    function updateElementPositions(bx, by, calcResults) {
         const containerWidth = document.getElementById('animation-container').clientWidth;
-        if (!containerWidth) return; // コンテナがまだ描画されていない場合
+        if (!containerWidth) return;
 
         const bxPx = (bx / 100) * containerWidth;
         const impactXPx = (impactXPercent / 100) * containerWidth;
         
-        // phiDegを取得（引数から、なければ再計算）
-        let phiDeg;
-        if (calcResults) {
-            phiDeg = calcResults.phiDeg;
-        } else {
-            const theta = parseFloat(thetaSlider.value);
-            phiDeg = 180 - theta;
-        }
+        // 最新の計算結果を取得
+        const res = calcResults || updateCalculations();
+        const phiDeg = res.phiDeg;
 
-        ball.style.transform = `translateX(${bxPx}px) translateX(-100%)`;
-        ballLabel.style.transform = `translateX(${bxPx - 30}px) translateX(-50%)`;
+        // ボールとラベルの位置を更新
+        ball.style.transform = `translate(${bxPx}px, ${-by}px) translateX(-100%)`;
+        ballLabel.style.transform = `translate(${bxPx - 30}px, ${-by}px) translateX(-50%)`;
         
-        const vArrowLen = parseFloat(velocityArrow.style.width) || 0;
-        const vForArrow = isRunning ? currentV : parseFloat(v0Slider.value);
-        if (vForArrow >= 0) {
-            velocityArrow.style.transform = `translateX(${bxPx - 30 + vArrowLen/2}px) translateX(-50%)`;
-        } else {
-            velocityArrow.style.transform = `translateX(${bxPx - 30 - vArrowLen/2}px) translateX(-50%)`;
-        }
+        // 速度矢印の回転と位置
+        const vxNow = isRunning ? currentVx : parseFloat(v0Slider.value);
+        const vyNow = isRunning ? currentVy : 0;
+        const vAngleDegNow = Math.atan2(vyNow, vxNow) * 180 / Math.PI;
+        velocityArrow.style.transform = `translate(${bxPx - 30}px, ${-by}px) rotate(${-vAngleDegNow}deg)`;
 
         if (impactPhase !== 1) {
             glove.style.transform = `translateX(${impactXPx}px) translateX(-50%) rotate(${180 - phiDeg}deg)`;
             gloveLabel.style.transform = `translateX(${impactXPx}px) translateX(-110%)`;
         } else {
-            glove.style.transform = `translateX(${bxPx}px) translateX(-50%) scale(1.3) rotate(${180 - phiDeg}deg)`;
-            gloveLabel.style.transform = `translateX(${bxPx}px) translateX(-110%)`;
+            glove.style.transform = `translate(${bxPx}px, ${-by}px) translateX(-50%) scale(1.3) rotate(${180 - phiDeg}deg)`;
+            gloveLabel.style.transform = `translate(${bxPx}px, ${-by}px) translateX(-110%)`;
         }
     }
 
@@ -725,10 +730,8 @@
         if (!isRunning) return;
 
         const results = updateCalculations();
-        const { v0, dt, vFinal, phiDeg } = results;
+        const { v0, dt, vxf, vyf, phiDeg } = results;
         const containerWidth = document.getElementById('animation-container').clientWidth;
-        
-        let displayV = currentV;
         
         if (impactPhase === 1) {
             // パンチ中
@@ -737,43 +740,38 @@
             
             if (elapsed < durationInSim) {
                 const progress = elapsed / durationInSim;
-                displayV = v0 + (vFinal - v0) * progress;
+                currentVx = v0 + (vxf - v0) * progress;
+                currentVy = 0 + (vyf - 0) * progress;
 
                 // 矢印（力積）をボールの位置に追従させる
                 const arrowLen = parseFloat(impulseArrow.style.width);
                 const bxPx = (ballX / 100) * containerWidth;
-                
-                // 力積矢印の水平オフセット計算
                 const phiRad = phiDeg * Math.PI / 180;
                 const offsetX = (arrowLen / 2) * Math.cos(phiRad);
-                // 向きが phi=180 (left) のとき cos(180)=-1, offsetX < 0.
-                // 向きが phi=0 (right) のとき cos(0)=1, offsetX > 0.
-                impulseArrow.style.left = `calc(${bxPx - 30 + offsetX}px)`;
-
-                // 速度矢印の長さと向きも更新
-                const vArrowLenNow = Math.min(Math.abs(displayV) * 18, 900);
-                velocityArrow.style.width = vArrowLenNow + 'px';
-                if (displayV >= 0) {
-                    velocityArrow.classList.remove('v-arrow-left');
-                    velocityArrow.classList.add('v-arrow-right');
-                } else {
-                    velocityArrow.classList.remove('v-arrow-right');
-                    velocityArrow.classList.add('v-arrow-left');
-                }
+                // Y方向のオフセット（ビジュアル上の中心合わせ）
+                const offsetY = -(arrowLen / 2) * Math.sin(phiRad);
+                
+                impulseArrow.style.left = `0`; // transformで制御するため
+                impulseArrow.style.transform = `translate(${bxPx - 30 + offsetX}px, ${-ballY + offsetY}px) translateX(-50%) rotate(${-phiDeg}deg)`;
             } else {
                 // パンチ終了
                 impactPhase = 2;
-                currentV = vFinal;
-                displayV = vFinal;
+                currentVx = vxf;
+                currentVy = vyf;
                 impulseArrow.style.display = 'none';
             }
         }
 
-        overlayV.textContent = displayV.toFixed(2);
-        const deltaX = (displayV * pxPerMeter / 60 * playbackSpeed) / containerWidth * 100;
-        ballX += deltaX;
+        const vTotal = Math.sqrt(currentVx*currentVx + currentVy*currentVy);
+        overlayV.textContent = vTotal.toFixed(2);
 
-        updateElementPositions(ballX, results);
+        // 移動
+        const deltaX = (currentVx * pxPerMeter / 60 * playbackSpeed) / containerWidth * 100;
+        const deltaY = (currentVy * pxPerMeter / 60 * playbackSpeed);
+        ballX += deltaX;
+        ballY += deltaY;
+
+        updateElementPositions(ballX, ballY, results);
 
         if (impactPhase === 0 && ballX >= impactXPercent - 2) {
             impactPhase = 1;
@@ -783,7 +781,8 @@
             setTimeout(() => { speechBubble.style.transform = 'translate(-50%, -50%) scale(0)'; }, 2000);
         }
 
-        if (ballX > 130 || ballX < -50) {
+        // 画面外に出たら停止 (上下左右)
+        if (ballX > 130 || ballX < -50 || ballY > 500 || ballY < -100) {
             isRunning = false;
         } else {
             animationId = requestAnimationFrame(animate);
@@ -795,10 +794,12 @@
         if (isRunning) return;
         const results = updateCalculations();
         ballX = 20;
-        currentV = results.v0;
+        ballY = 0;
+        currentVx = results.v0;
+        currentVy = 0;
         impactPhase = 0;
         isRunning = true;
-        updateElementPositions(20, results);
+        updateElementPositions(20, 0, results);
         impulseArrow.style.display = 'none';
         speechBubble.style.transform = 'translate(-50%, -50%) scale(0)';
         animationId = requestAnimationFrame(animate);
@@ -809,9 +810,10 @@
         isRunning = false;
         cancelAnimationFrame(animationId);
         ballX = 20;
+        ballY = 0;
         impactPhase = 0;
         const results = updateCalculations();
-        updateElementPositions(20, results);
+        updateElementPositions(20, 0, results);
         impulseArrow.style.display = 'none';
         speechBubble.style.transform = 'translate(-50%, -50%) scale(0)';
     });
