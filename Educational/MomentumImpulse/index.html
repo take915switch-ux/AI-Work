@@ -709,10 +709,10 @@
         }
 
         if (impactPhase !== 1) {
-            glove.style.transform = `translateX(${impactXPx}px) translateX(-50%) rotate(${-phiDeg}deg)`;
+            glove.style.transform = `translateX(${impactXPx}px) translateX(-50%) rotate(${180 - phiDeg}deg)`;
             gloveLabel.style.transform = `translateX(${impactXPx}px) translateX(-110%)`;
         } else {
-            glove.style.transform = `translateX(${bxPx}px) translateX(-50%) scale(1.3) rotate(${-phiDeg}deg)`;
+            glove.style.transform = `translateX(${bxPx}px) translateX(-50%) scale(1.3) rotate(${180 - phiDeg}deg)`;
             gloveLabel.style.transform = `translateX(${bxPx}px) translateX(-110%)`;
         }
     }
