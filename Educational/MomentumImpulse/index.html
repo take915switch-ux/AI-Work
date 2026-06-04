@@ -628,7 +628,6 @@
         if (!isRunning) {
             overlayV.textContent = v0.toFixed(2);
             ballX = 20;
-            updateElementPositions(20);
         }
 
         resJ.textContent = Math.abs(j).toFixed(2);
@@ -658,6 +657,11 @@
         } else {
             velocityArrow.classList.remove('v-arrow-right');
             velocityArrow.classList.add('v-arrow-left');
+        }
+
+        // すべてのサイズが決まった後に位置を更新 (初回ロード時のズレ防止)
+        if (!isRunning) {
+            updateElementPositions(ballX);
         }
 
         return { m, v0, f, dt, dir, vFinal };
