@@ -505,11 +505,9 @@
         if (dir > 0) {
             impulseArrow.classList.remove('arrow-left');
             impulseArrow.classList.add('arrow-right');
-            impulseArrow.style.left = `calc(${impactXPercent}% - ${arrowLen/2}px)`;
         } else {
             impulseArrow.classList.remove('arrow-right');
             impulseArrow.classList.add('arrow-left');
-            impulseArrow.style.left = `calc(${impactXPercent}% + ${arrowLen/2}px)`;
         }
 
         return { v0, f, dt, dir, vFinal };
@@ -523,7 +521,7 @@
     function animate(timestamp) {
         if (!isRunning) return;
 
-        const { v0, dt, vFinal } = updateCalculations();
+        const { v0, dt, vFinal, dir } = updateCalculations();
         const containerWidth = document.getElementById('animation-container').clientWidth;
         
         // 速度計算
@@ -538,6 +536,16 @@
                 // 徐々に速度を変える（等加速度運動）
                 const progress = elapsed / durationInSim;
                 displayV = v0 + (vFinal - v0) * progress;
+
+                // 矢印をボールの位置に追従させる
+                // ボールの右端が ballX。中心は ballX - 30px。
+                // 矢印の向きに合わせて位置を微調整
+                const arrowLen = parseFloat(impulseArrow.style.width);
+                if (dir > 0) {
+                    impulseArrow.style.left = `calc(${ballX}% - 30px + ${arrowLen/2}px)`;
+                } else {
+                    impulseArrow.style.left = `calc(${ballX}% - 30px - ${arrowLen/2}px)`;
+                }
             } else {
                 // パンチ終了
                 impactPhase = 2;
