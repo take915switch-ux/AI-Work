@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pn接合アニメーション</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-glow page-glow-left" aria-hidden="true"></div>
+    <div class="page-glow page-glow-right" aria-hidden="true"></div>
+
+    <main class="app-shell">
+      <header class="hero">
+        <p class="eyebrow">Semiconductor Learning App</p>
+        <h1>pn接合でキャリアがどう動き、<br />境界にどんな電場ができるかを見る</h1>
+        <p class="lead">
+          n型の自由電子とp型のホールが、接合するとどちらへ拡散し、どこで再結合し、
+          その結果として空乏層と内部電場がどう立ち上がるかを、時間の流れで追える教材アプリです。
+        </p>
+      </header>
+
+      <section class="studio">
+        <section class="viewer-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="section-kicker">Animation Stage</p>
+              <h2 id="stageTitle">接触前: n型とp型はまだ別々</h2>
+            </div>
+            <div class="stage-pill" id="stageBadge">Stage 1 / 5</div>
+          </div>
+
+          <div class="viewer-frame">
+            <svg
+              id="junctionViz"
+              viewBox="0 0 960 620"
+              role="img"
+              aria-labelledby="appTitle appDesc"
+            >
+              <title id="appTitle">pn接合におけるキャリア拡散と内部電場のアニメーション</title>
+              <desc id="appDesc">
+                n型半導体の電子とp型半導体のホールが接合後に拡散し、境界で再結合して空乏層と内部電場を作る様子を模式的に示す。
+              </desc>
+            </svg>
+            <div class="in-frame-legend" aria-label="電子とホールのレジェンド">
+              <p class="in-frame-legend-title">キャリア</p>
+              <div class="legend-list compact-legend-list">
+                <div class="legend-item compact-legend-item">
+                  <span class="legend-symbol electron-symbol"></span>
+                  <span>電子</span>
+                </div>
+                <div class="legend-item compact-legend-item">
+                  <span class="legend-symbol hole-symbol"></span>
+                  <span>ホール</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="control-bar">
+            <div class="transport">
+              <button id="playPauseButton" class="primary-button" type="button">一時停止</button>
+              <button id="stepPlayButton" class="ghost-button" type="button">1ステップ再生</button>
+              <button id="resetButton" class="ghost-button" type="button">最初に戻る</button>
+            </div>
+
+            <label class="timeline" for="timelineSlider">
+              <span>進行</span>
+              <input id="timelineSlider" type="range" min="0" max="1000" value="0" />
+            </label>
+          </div>
+
+          <div class="step-grid" id="stepButtons" aria-label="学習ステップ"></div>
+
+          <p class="viewer-note">
+            この図は概念説明のための模式図です。粒子数や距離感は実際の半導体そのものの比率ではなく、
+            「どのキャリアがどちらへ動くか」を見やすく強調しています。
+          </p>
+        </section>
+
+        <aside class="info-panel">
+          <section class="info-card">
+            <p class="section-kicker">Now Watching</p>
+            <p class="narration" id="stageNarration">
+              まだ接合していないので、n型には移動しやすい電子が多く、p型にはホールが多い状態です。
+            </p>
+            <ul class="bullet-list" id="bulletList"></ul>
+          </section>
+
+          <section class="info-card legend-card">
+            <p class="section-kicker">Legend</p>
+            <div class="legend-list">
+              <div class="legend-item">
+                <span class="legend-symbol donor-symbol">+</span>
+                <span>ドナーイオン</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-symbol acceptor-symbol">−</span>
+                <span>アクセプタイオン</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="info-card takeaway-card">
+            <p class="section-kicker">Key Idea</p>
+            <p id="takeaway">
+              拡散は濃度の偏りをならそうとする向きに起こります。接合すると、その拡散が境界で固定イオンを残し、
+              後からキャリアを押し戻す内部電場の原因になります。
+            </p>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
