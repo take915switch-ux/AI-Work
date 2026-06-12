@@ -417,20 +417,80 @@
 
                 // Velocity Arrow and Label
                 if (Math.abs(b.v) > 0.01) {
-                    const arrowY = b.y - b.radius - 15;
+                    const arrowY = b.y - b.radius - 20;
                     drawArrow(b.x, arrowY, b.v * 15, b.color);
                     
-                    // Velocity Text (e.g., 1/2v)
-                    ctx.fillStyle = b.color;
-                    ctx.font = 'italic 16px serif';
-                    ctx.textAlign = 'center';
+                    // Velocity Text (e.g., vertical fraction of v)
                     const fraction = getFraction(b.v / INITIAL_V);
                     if (fraction !== '0') {
-                        const vLabel = (fraction === '1' ? '' : (fraction === '-1' ? '-' : fraction)) + 'v';
-                        ctx.fillText(vLabel, b.x + (b.v * 7.5), arrowY - 15);
+                        drawVelocityLabel(b.x + (b.v * 7.5), arrowY - 25, fraction, b.color);
                     }
                 }
             });
+        }
+
+        function drawVelocityLabel(x, y, fraction, color) {
+            ctx.fillStyle = color;
+            ctx.font = 'italic 24px serif'; // 1.5x original (16 * 1.5 = 24)
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            if (!fraction.includes('/')) {
+                // Integer value (e.g., v, 2v, -v)
+                const label = (fraction === '1' ? '' : (fraction === '-1' ? '-' : fraction)) + 'v';
+                ctx.fillText(label, x, y);
+            } else {
+                // Fraction value (e.g., 1/2v)
+                const parts = fraction.split('/');
+                const sign = parts[0].startsWith('-') ? '-' : '';
+                const num = parts[0].replace('-', '');
+                const den = parts[1];
+                
+                // Measure 'v' and sign to position it
+                ctx.font = 'italic 24px serif';
+                const vWidth = ctx.measureText('v').width;
+                const signWidth = sign ? ctx.measureText(sign).width : 0;
+                
+                // Draw vertical fraction
+                drawVerticalFraction(x - vWidth/2, y, sign, num, den, color);
+                
+                // Draw 'v' after the fraction
+                ctx.font = 'italic 24px serif';
+                ctx.fillText('v', x + (signWidth + 10)/2 + 5, y);
+            }
+        }
+
+        function drawVerticalFraction(x, y, sign, num, den, color) {
+            ctx.fillStyle = color;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1.5;
+            
+            const fontSize = 18; // Size for num/den (scaled proportionately)
+            ctx.font = `italic ${fontSize}px serif`;
+            
+            const numWidth = ctx.measureText(num).width;
+            const denWidth = ctx.measureText(den).width;
+            const fracWidth = Math.max(numWidth, denWidth);
+            
+            let currentX = x - fracWidth / 2;
+
+            if (sign) {
+                ctx.font = 'italic 24px serif';
+                ctx.fillText(sign, currentX - 10, y);
+            }
+
+            // Numerator
+            ctx.font = `italic ${fontSize}px serif`;
+            ctx.fillText(num, currentX, y - 10);
+            
+            // Denominator
+            ctx.fillText(den, currentX, y + 10);
+            
+            // Fraction Bar
+            ctx.beginPath();
+            ctx.moveTo(currentX - fracWidth/2 - 2, y);
+            ctx.lineTo(currentX + fracWidth/2 + 2, y);
+            ctx.stroke();
         }
 
         function getFraction(val) {
