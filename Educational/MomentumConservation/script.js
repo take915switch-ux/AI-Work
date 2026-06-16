@@ -552,11 +552,11 @@ function drawVelocityVector(position, velocity, color, label) {
 
   drawIndexedLabel(
     simulationContext,
-    endCanvas.x + (endCanvas.x >= startCanvas.x ? 8 : -28),
-    endCanvas.y + (endCanvas.y >= startCanvas.y ? 16 : -10),
+    endCanvas.x + (endCanvas.x >= startCanvas.x ? 14 : -78),
+    endCanvas.y + (endCanvas.y >= startCanvas.y ? 34 : -18),
     label,
     color,
-    14
+    42
   );
 }
 
@@ -641,6 +641,7 @@ function drawVectorScene(options) {
 
   const layout = getVectorLayout(canvas);
   const totalVector = add(momentum1, momentum2);
+  const totalTip = vectorToCanvas(layout, totalVector);
 
   drawVectorAxes(context, canvas, layout);
   panel.classList.toggle("is-muted", !visible);
@@ -649,28 +650,30 @@ function drawVectorScene(options) {
     return;
   }
 
-  drawArrow(context, layout, momentum1, {
+  const firstTip = drawArrow(context, layout, momentum1, {
     color: colors.first,
     label: label1,
-    width: 4,
+    width: 8,
     dash: [],
-    labelOffset: { x: -12, y: -16 },
+    labelOffset: { x: -40, y: -26 },
     halo: true,
   });
-  drawArrow(context, layout, momentum2, {
+  const secondTip = drawArrow(context, layout, momentum2, {
     color: colors.second,
     label: label2,
-    width: 4,
+    width: 8,
     dash: [],
-    labelOffset: { x: 10, y: -14 },
+    labelOffset: { x: 16, y: -24 },
     halo: true,
   });
+
+  drawParallelogramGuides(context, firstTip, secondTip, totalTip, colors);
   drawArrow(context, layout, totalVector, {
     color: colors.total,
     label: "合計",
-    width: 7,
+    width: 14,
     dash: [],
-    labelOffset: { x: 14, y: -18 },
+    labelOffset: { x: 22, y: -28 },
     halo: true,
     accentColor: palette.totalAccent,
   });
@@ -694,12 +697,12 @@ function drawVectorAxes(context, canvas, layout) {
   context.stroke();
 
   context.fillStyle = "rgba(21, 52, 71, 0.74)";
-  context.font = '12px "Avenir Next", "Hiragino Sans", sans-serif';
-  context.fillText("x", xAxisEnd.x - 10, xAxisEnd.y - 10);
-  context.fillText("y", yAxisEnd.x + 10, yAxisEnd.y + 14);
+  context.font = '48px "Avenir Next", "Hiragino Sans", sans-serif';
+  context.fillText("x", xAxisEnd.x - 36, xAxisEnd.y - 18);
+  context.fillText("y", yAxisEnd.x + 14, yAxisEnd.y + 42);
 
   context.beginPath();
-  context.arc(layout.origin.x, layout.origin.y, 4, 0, Math.PI * 2);
+  context.arc(layout.origin.x, layout.origin.y, 8, 0, Math.PI * 2);
   context.fill();
   context.restore();
 }
@@ -721,9 +724,9 @@ function drawArrow(context, layout, vector, options) {
       destination.y + options.labelOffset.y,
       options.label,
       options.accentColor || options.color,
-      13
+      52
     );
-    return;
+    return destination;
   }
 
   drawIndexedLabel(
@@ -732,18 +735,19 @@ function drawArrow(context, layout, vector, options) {
     destination.y + options.labelOffset.y,
     options.label,
     options.color,
-    13
+    52
   );
+  return destination;
 }
 
 function drawArrowSegment(context, start, end, options) {
   const angle = Math.atan2(end.y - start.y, end.x - start.x);
-  const headLength = 14;
+  const headLength = Math.max(options.width * 2.8, 18);
 
   context.save();
   if (options.halo) {
     context.strokeStyle = "rgba(255, 255, 255, 0.88)";
-    context.lineWidth = options.width + 4;
+    context.lineWidth = options.width + 6;
     context.setLineDash([]);
     context.beginPath();
     context.moveTo(start.x, start.y);
@@ -788,6 +792,28 @@ function drawTextLabel(context, x, y, text, color, fontSize) {
   context.restore();
 }
 
+function drawParallelogramGuides(context, firstTip, secondTip, totalTip, colors) {
+  context.save();
+  context.lineWidth = 3;
+  context.lineCap = "round";
+  context.setLineDash([14, 12]);
+  context.globalAlpha = 0.55;
+
+  context.strokeStyle = colors.second;
+  context.beginPath();
+  context.moveTo(firstTip.x, firstTip.y);
+  context.lineTo(totalTip.x, totalTip.y);
+  context.stroke();
+
+  context.strokeStyle = colors.first;
+  context.beginPath();
+  context.moveTo(secondTip.x, secondTip.y);
+  context.lineTo(totalTip.x, totalTip.y);
+  context.stroke();
+
+  context.restore();
+}
+
 function drawIndexedLabel(context, x, y, label, color, fontSize) {
   context.save();
   context.fillStyle = color;
@@ -798,13 +824,13 @@ function drawIndexedLabel(context, x, y, label, color, fontSize) {
   context.fillText(label.base, x, y);
   const baseWidth = context.measureText(label.base).width;
 
-  context.font = `bold ${Math.max(fontSize - 3, 9)}px "Avenir Next", "Hiragino Sans", sans-serif`;
-  context.fillText(label.subscript, x + baseWidth - 1, y + 4);
+  context.font = `bold ${Math.max(Math.round(fontSize * 0.65), 14)}px "Avenir Next", "Hiragino Sans", sans-serif`;
+  context.fillText(label.subscript, x + baseWidth + 1, y + Math.max(Math.round(fontSize * 0.28), 4));
   const subWidth = context.measureText(label.subscript).width;
 
   if (label.suffix) {
-    context.font = `bold ${Math.max(fontSize - 1, 10)}px "Avenir Next", "Hiragino Sans", sans-serif`;
-    context.fillText(label.suffix, x + baseWidth + subWidth + 3, y);
+    context.font = `bold ${Math.max(Math.round(fontSize * 0.82), 16)}px "Avenir Next", "Hiragino Sans", sans-serif`;
+    context.fillText(label.suffix, x + baseWidth + subWidth + Math.max(Math.round(fontSize * 0.18), 3), y);
   }
 
   context.restore();
