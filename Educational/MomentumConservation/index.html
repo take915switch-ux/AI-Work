@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>2球の衝突と運動量保存</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <main class="dashboard">
+        <div class="visual-row">
+          <section class="scene-panel card">
+            <div class="panel-heading panel-heading-compact">
+              <div id="phaseBadge" class="phase-badge">接近中</div>
+            </div>
+            <canvas id="simulationCanvas" width="720" height="420"></canvas>
+          </section>
+
+          <section id="vectorBeforePanel" class="vector-panel card">
+            <div class="panel-heading panel-heading-compact">
+              <div class="vector-stage-badge vector-stage-before">衝突前</div>
+            </div>
+            <div class="vector-viewport">
+              <canvas id="vectorBeforeCanvas" width="720" height="720"></canvas>
+            </div>
+          </section>
+
+          <section id="vectorAfterPanel" class="vector-panel card">
+            <div class="panel-heading panel-heading-compact">
+              <div class="vector-stage-badge vector-stage-after">衝突後</div>
+              <div id="conservationBadge" class="conservation-badge">保存誤差 0.00</div>
+            </div>
+            <div class="vector-viewport">
+              <canvas id="vectorAfterCanvas" width="720" height="720"></canvas>
+            </div>
+          </section>
+        </div>
+
+        <section class="control-panel card">
+          <form id="controls" class="controls" autocomplete="off">
+            <label class="control-row">
+              <span class="control-label">球Aの質量</span>
+              <div class="control-field">
+                <input
+                  id="mass1Range"
+                  data-key="mass1"
+                  type="range"
+                  min="0.5"
+                  max="5"
+                  step="0.1"
+                  value="4.0"
+                />
+                <input
+                  id="mass1Number"
+                  data-key="mass1"
+                  type="number"
+                  min="0.5"
+                  max="5"
+                  step="0.1"
+                  value="4.0"
+                />
+                <span class="unit">kg</span>
+              </div>
+            </label>
+
+            <label class="control-row">
+              <span class="control-label">球Aの速さ</span>
+              <div class="control-field">
+                <input
+                  id="speed1Range"
+                  data-key="speed1"
+                  type="range"
+                  min="0.5"
+                  max="8"
+                  step="0.1"
+                  value="8.0"
+                />
+                <input
+                  id="speed1Number"
+                  data-key="speed1"
+                  type="number"
+                  min="0.5"
+                  max="8"
+                  step="0.1"
+                  value="8.0"
+                />
+                <span class="unit">m/s</span>
+              </div>
+            </label>
+
+            <label class="control-row">
+              <span class="control-label">球Bの質量</span>
+              <div class="control-field">
+                <input
+                  id="mass2Range"
+                  data-key="mass2"
+                  type="range"
+                  min="0.5"
+                  max="5"
+                  step="0.1"
+                  value="4.0"
+                />
+                <input
+                  id="mass2Number"
+                  data-key="mass2"
+                  type="number"
+                  min="0.5"
+                  max="5"
+                  step="0.1"
+                  value="4.0"
+                />
+                <span class="unit">kg</span>
+              </div>
+            </label>
+
+            <label class="control-row">
+              <span class="control-label">球Bの速さ</span>
+              <div class="control-field">
+                <input
+                  id="speed2Range"
+                  data-key="speed2"
+                  type="range"
+                  min="0.5"
+                  max="8"
+                  step="0.1"
+                  value="8.0"
+                />
+                <input
+                  id="speed2Number"
+                  data-key="speed2"
+                  type="number"
+                  min="0.5"
+                  max="8"
+                  step="0.1"
+                  value="8.0"
+                />
+                <span class="unit">m/s</span>
+              </div>
+            </label>
+
+            <label class="control-row">
+              <span class="control-label">反発係数</span>
+              <div class="control-field">
+                <input
+                  id="restitutionRange"
+                  data-key="restitution"
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value="0.8"
+                />
+                <input
+                  id="restitutionNumber"
+                  data-key="restitution"
+                  type="number"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value="0.8"
+                />
+                <span class="unit">e</span>
+              </div>
+            </label>
+
+            <div class="settings-footer">
+              <div class="toggle-row">
+                <label class="toggle-pill">
+                  <input id="showBefore" type="checkbox" checked />
+                  <span>衝突前の図を表示</span>
+                </label>
+                <label class="toggle-pill">
+                  <input id="showAfter" type="checkbox" checked />
+                  <span>衝突後の図を表示</span>
+                </label>
+              </div>
+
+              <div class="button-row">
+                <button id="replayButton" type="button" class="primary-button">
+                  もう一度再生
+                </button>
+                <button id="pauseButton" type="button" class="ghost-button" aria-pressed="false">
+                  一時停止
+                </button>
+              </div>
+            </div>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
