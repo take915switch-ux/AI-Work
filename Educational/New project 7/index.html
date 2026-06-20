@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>回転円板と摩擦シミュレーション</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="intro-card">
+        <p class="eyebrow">FRICTION LAB</p>
+        <h1>回転円板から飛び出す物体</h1>
+        <p class="lead">
+          右側の物体を円板へドラッグして置くと、次の物体が待機位置に自動で補充されます。角速度を上げていくと、必要な静止摩擦力が上限を超えた瞬間に物体がすべり出します。
+          物体に働く摩擦力ベクトルは、円板上にあるあいだ常に表示されます。
+        </p>
+      </section>
+
+      <section class="workspace">
+        <div class="sim-panel">
+          <div class="panel-head">
+            <div>
+              <h2>上から見た円板</h2>
+              <p>静止摩擦は橙、すべり中の摩擦は赤で表示します。</p>
+            </div>
+            <div class="legend">
+              <span class="legend-item"><i class="dot static"></i>静止摩擦</span>
+              <span class="legend-item"><i class="dot kinetic"></i>すべり摩擦</span>
+            </div>
+          </div>
+          <div class="canvas-frame">
+            <canvas id="simCanvas" aria-label="回転円板のシミュレーション"></canvas>
+          </div>
+        </div>
+
+        <aside class="control-panel">
+          <section class="card">
+            <h2>操作</h2>
+            <ol class="steps">
+              <li>右の待機位置から物体を円板にドラッグする</li>
+              <li>載せ終えると次の物体が待機位置に補充される</li>
+              <li>角速度スライダーで回転を強める</li>
+              <li>静止摩擦の限界を超えると物体が飛び出す</li>
+            </ol>
+          </section>
+
+          <section class="card control-card">
+            <div class="slider-row">
+              <label for="omegaSlider">目標角速度</label>
+              <span id="targetOmegaLabel">0.00 rad/s</span>
+            </div>
+            <input
+              id="omegaSlider"
+              type="range"
+              min="0"
+              max="6"
+              step="0.01"
+              value="0"
+            />
+            <p class="helper">
+              円板は急には回らず、一定の角加速度で目標値へ近づきます。
+            </p>
+
+            <div class="button-row">
+              <button id="stopButton" type="button">ゆっくり停止</button>
+              <button id="resetButton" class="accent" type="button">初期状態に戻す</button>
+            </div>
+          </section>
+
+          <section class="card stats-card">
+            <h2>状態</h2>
+            <dl class="stats">
+              <div>
+                <dt>注目中の物体</dt>
+                <dd id="objectState">未配置</dd>
+              </div>
+              <div>
+                <dt>実際の角速度 ω</dt>
+                <dd id="omegaValue">0.00 rad/s</dd>
+              </div>
+              <div>
+                <dt>角加速度 α</dt>
+                <dd id="alphaValue">0.00 rad/s²</dd>
+              </div>
+              <div>
+                <dt>中心からの距離 r</dt>
+                <dd id="radiusValue">0.00 m</dd>
+              </div>
+              <div>
+                <dt>摩擦力の大きさ</dt>
+                <dd id="frictionValue">0.00 N</dd>
+              </div>
+              <div>
+                <dt>最大静止摩擦力</dt>
+                <dd id="limitValue">0.00 N</dd>
+              </div>
+            </dl>
+            <p id="statusNote" class="status-note">
+              まずは物体を円板に置いてみてください。
+            </p>
+          </section>
+
+          <section class="card formula-card">
+            <h2>設定</h2>
+            <ul class="constants">
+              <li>円板半径: <strong>1.20 m</strong></li>
+              <li>物体の質量: <strong>1.00 kg</strong></li>
+              <li>静止摩擦係数: <strong>0.34</strong></li>
+              <li>動摩擦係数: <strong>0.26</strong></li>
+              <li>角加速度の上限: <strong>1.35 rad/s²</strong></li>
+            </ul>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
