@@ -135,6 +135,14 @@ function isDraggable(object) {
   return object.mode === "stuck" && Math.abs(state.omega) < 0.12;
 }
 
+function grabRadiusForObject(object) {
+  const baseRadius = PHYSICS.objectRadius * 1.5;
+  const minTouchRadiusPx =
+    object.mode === "ready" || object.mode === "dragging" ? 36 : 28;
+  const touchRadius = minTouchRadiusPx / state.view.scale;
+  return Math.max(baseRadius, touchRadius);
+}
+
 function currentRadius(object) {
   if (!object) {
     return 0;
@@ -289,13 +297,12 @@ function focusedObject() {
 }
 
 function pickObject(worldPoint) {
-  const grabRadius = PHYSICS.objectRadius * 1.5;
   for (let index = state.objects.length - 1; index >= 0; index -= 1) {
     const object = state.objects[index];
     if (!isDraggable(object)) {
       continue;
     }
-    if (lengthOf(sub(worldPoint, object.pos)) <= grabRadius) {
+    if (lengthOf(sub(worldPoint, object.pos)) <= grabRadiusForObject(object)) {
       return object;
     }
   }
@@ -325,6 +332,7 @@ function maybeStartSliding(object) {
 }
 
 function beginDrag(event) {
+  event.preventDefault();
   const worldPoint = getPointerWorldPosition(event);
   const object = pickObject(worldPoint);
   if (!object) {
@@ -345,6 +353,7 @@ function beginDrag(event) {
 }
 
 function moveDrag(event) {
+  event.preventDefault();
   if (state.dragPointerId !== event.pointerId || state.dragObjectId === null) {
     return;
   }
