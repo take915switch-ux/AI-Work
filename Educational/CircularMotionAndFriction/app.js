@@ -111,6 +111,12 @@ function formatNumber(value, digits = 2) {
   return `${value.toFixed(digits)}`;
 }
 
+function preventDefaultIfCancelable(event) {
+  if (event.cancelable) {
+    event.preventDefault();
+  }
+}
+
 function getObjectById(id) {
   return state.objects.find((object) => object.id === id) ?? null;
 }
@@ -165,9 +171,10 @@ function updateCanvasSize() {
 
   const width = canvas.clientWidth;
   const height = canvas.clientHeight;
+  const compactViewport = width <= 1024;
   state.view.centerX = width * 0.42;
-  state.view.centerY = height * 0.52;
-  state.view.scale = Math.min(width * 0.255, height * 0.36);
+  state.view.centerY = height * (compactViewport ? 0.47 : 0.5);
+  state.view.scale = Math.min(width * 0.255, height * (compactViewport ? 0.34 : 0.36));
 }
 
 function worldToScreen(v) {
@@ -332,7 +339,7 @@ function maybeStartSliding(object) {
 }
 
 function beginDrag(event) {
-  event.preventDefault();
+  preventDefaultIfCancelable(event);
   const worldPoint = getPointerWorldPosition(event);
   const object = pickObject(worldPoint);
   if (!object) {
@@ -353,7 +360,7 @@ function beginDrag(event) {
 }
 
 function moveDrag(event) {
-  event.preventDefault();
+  preventDefaultIfCancelable(event);
   if (state.dragPointerId !== event.pointerId || state.dragObjectId === null) {
     return;
   }
@@ -416,6 +423,16 @@ function finishDrag(event, cancelled = false) {
 
   setObjectOffDisk(object);
   state.focusObjectId = object.id;
+}
+
+function preventCanvasTouchScroll(event) {
+  preventDefaultIfCancelable(event);
+}
+
+function preventWindowTouchScroll(event) {
+  if (state.dragObjectId !== null) {
+    preventDefaultIfCancelable(event);
+  }
 }
 
 function updateDisk(dt) {
@@ -791,8 +808,13 @@ canvas.addEventListener("pointerleave", (event) => {
     moveDrag(event);
   }
 });
+canvas.addEventListener("touchstart", preventCanvasTouchScroll, { passive: false });
+canvas.addEventListener("touchmove", preventCanvasTouchScroll, { passive: false });
+canvas.addEventListener("touchend", preventCanvasTouchScroll, { passive: false });
+canvas.addEventListener("touchcancel", preventCanvasTouchScroll, { passive: false });
 
 window.addEventListener("resize", updateCanvasSize);
+window.addEventListener("touchmove", preventWindowTouchScroll, { passive: false });
 
 setTargetOmega(0);
 resetObjects();
