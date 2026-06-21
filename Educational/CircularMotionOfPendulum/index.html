@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>釘で半径が変わる振り子シミュレーション</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="workspace">
+        <section class="stage card">
+          <div class="stage-head">
+            <div>
+              <h2>運動のようす</h2>
+              <p>
+                張力ベクトルは常時表示。釘は A の真下だけを上下に動かせます。
+              </p>
+            </div>
+            <div class="legend">
+              <span class="legend-item"><i class="swatch tension"></i>張力ベクトル</span>
+              <span class="legend-item"><i class="swatch trail"></i>軌跡</span>
+              <span class="legend-item"><i class="swatch guide"></i>基準円</span>
+            </div>
+          </div>
+          <div class="canvas-wrap">
+            <canvas id="simCanvas" aria-label="釘に掛かる振り子のシミュレーション"></canvas>
+          </div>
+        </section>
+
+        <aside class="sidebar">
+          <section class="card controls">
+            <h2>操作</h2>
+            <p class="helper">
+              小球は左水平から右水平までドラッグできます。離すとその角度から静かにスタートします。
+            </p>
+
+            <div class="slider-row">
+              <label for="nailSlider">釘の高さ AO</label>
+              <span id="nailValue">0.80 m</span>
+            </div>
+            <input
+              id="nailSlider"
+              type="range"
+              min="0.24"
+              max="1.28"
+              step="0.01"
+              value="0.80"
+            />
+            <p class="helper" id="nailHelp">
+              動作中に釘を動かすと、同じ持ち上げ角からやり直します。
+            </p>
+
+            <div class="slider-row">
+              <label for="speedSlider">再生速度</label>
+              <span id="speedScaleValue">1.00x</span>
+            </div>
+            <input
+              id="speedSlider"
+              type="range"
+              min="0.10"
+              max="1.00"
+              step="0.05"
+              value="1.00"
+            />
+            <p class="helper">
+              0.10x まで落とせます。物理の条件はそのままで、時間の進み方だけを遅くします。
+            </p>
+
+            <div class="button-grid">
+              <button id="launchButton" class="primary" type="button">
+                この角度で手放す
+              </button>
+              <button id="pauseButton" type="button">一時停止</button>
+              <button id="resetButton" type="button">同じ条件でやり直す</button>
+              <button id="exampleButton" type="button">例題設定に戻す</button>
+            </div>
+          </section>
+
+          <section class="card readout">
+            <h2>現在の状態</h2>
+            <dl class="stats">
+              <div>
+                <dt>フェーズ</dt>
+                <dd id="phaseValue">持ち上げ待ち</dd>
+              </div>
+              <div>
+                <dt>支点</dt>
+                <dd id="pivotValue">A</dd>
+              </div>
+              <div>
+                <dt>現在角度</dt>
+                <dd id="angleValue">θ = -90.0°</dd>
+              </div>
+              <div>
+                <dt>速さ</dt>
+                <dd id="speedValue">0.00 m/s</dd>
+              </div>
+              <div>
+                <dt>張力</dt>
+                <dd id="tensionValue">0.00 N</dd>
+              </div>
+              <div>
+                <dt>有効半径</dt>
+                <dd id="radiusValue">1.60 m</dd>
+              </div>
+            </dl>
+            <p id="statusNote" class="status-note">
+              小球をドラッグして高さを決めるか、そのまま左水平から手放せます。
+            </p>
+          </section>
+
+          <section class="card theory">
+            <h2>この条件での予測</h2>
+            <dl class="stats compact">
+              <div>
+                <dt>接触直前 T1</dt>
+                <dd id="t1Value">29.43 N</dd>
+              </div>
+              <div>
+                <dt>接触直後 T2</dt>
+                <dd id="t2Value">49.05 N</dd>
+              </div>
+              <div>
+                <dt>円軌道を離れる角 φ</dt>
+                <dd id="detachAngleValue">131.8°</dd>
+              </div>
+              <div>
+                <dt>そのときの cos φ</dt>
+                <dd id="detachCosValue">-0.67</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section class="card formula">
+            <h2>見ている式</h2>
+            <ul class="formula-list">
+              <li><code>T = m(v² / r + g cos ψ)</code></li>
+              <li><code>v² = 2 g l (1 - cos α)</code></li>
+              <li><code>r = l - AO</code></li>
+            </ul>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
