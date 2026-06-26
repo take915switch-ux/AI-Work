@@ -26,6 +26,8 @@ const VIEWPORT = Object.freeze({
 
 const canvas = document.getElementById("simCanvas");
 const ctx = canvas.getContext("2d");
+const releaseAngleSlider = document.getElementById("releaseAngleSlider");
+const releaseAngleValueEl = document.getElementById("releaseAngleValue");
 const nailSlider = document.getElementById("nailSlider");
 const nailValueEl = document.getElementById("nailValue");
 const speedSlider = document.getElementById("speedSlider");
@@ -90,6 +92,10 @@ function distanceFromNail(point) {
 
 function add(a, b) {
   return { x: a.x + b.x, y: a.y + b.y };
+}
+
+function dot(a, b) {
+  return a.x * b.x + a.y * b.y;
 }
 
 function scale(vector, scalar) {
@@ -168,6 +174,13 @@ function velocityOnNailCircle(angle, angularVelocity) {
   };
 }
 
+function tangentUnitForAngle(angle) {
+  return {
+    x: Math.cos(angle),
+    y: -Math.sin(angle),
+  };
+}
+
 function pendulumAcceleration(angle, radius) {
   return -(CONFIG.g / radius) * Math.sin(angle);
 }
@@ -232,6 +245,12 @@ function syncNailLabel() {
   nailValueEl.textContent = `${formatNumber(state.nailDistance)} m`;
 }
 
+function syncReleaseAngleLabel() {
+  const degrees = radiansToDegrees(state.preparedAngle);
+  releaseAngleSlider.value = degrees.toFixed(0);
+  releaseAngleValueEl.textContent = `${formatSignedNumber(degrees, 1)}°`;
+}
+
 function syncTimeScaleLabel() {
   speedScaleValueEl.textContent = `${formatNumber(state.timeScale)}x`;
 }
@@ -260,6 +279,7 @@ function setReadyPose() {
 function resetToReady(angle = state.preparedAngle) {
   state.preparedAngle = clamp(angle, CONFIG.dragMinAngle, CONFIG.dragMaxAngle);
   state.releaseAngle = state.preparedAngle;
+  syncReleaseAngleLabel();
   state.paused = false;
   state.hasCaughtNail = false;
   state.projectileWentInsideCircle = false;
@@ -275,9 +295,18 @@ function applyExamplePreset() {
   resetToReady(CONFIG.dragMinAngle);
 }
 
-function setPreparedAngle(nextAngle) {
+function setPreparedAngle(nextAngle, syncPose = true, syncCurrentRelease = syncPose) {
   state.preparedAngle = clamp(nextAngle, CONFIG.dragMinAngle, CONFIG.dragMaxAngle);
-  state.releaseAngle = state.preparedAngle;
+  if (syncCurrentRelease) {
+    state.releaseAngle = state.preparedAngle;
+  }
+
+  syncReleaseAngleLabel();
+
+  if (!syncPose) {
+    return;
+  }
+
   state.activePivot = "A";
   state.currentRadius = CONFIG.stringLength;
   state.angle = state.preparedAngle;
@@ -378,6 +407,32 @@ function stopAtProjectileRecontact(position, velocity) {
   state.angle = angleAroundNail(position);
   state.tension = 0;
   state.projectileWentInsideCircle = false;
+}
+
+function syncSwingAfterNailMove() {
+  const radius = nailRadius();
+  const tangent = tangentUnitForAngle(state.angle);
+  const tangentialSpeed = dot(state.vel, tangent);
+
+  state.activePivot = "O";
+  state.currentRadius = radius;
+  state.pos = positionOnNailCircle(state.angle);
+  state.angVel = tangentialSpeed / radius;
+  state.vel = velocityOnNailCircle(state.angle, state.angVel);
+  state.tension = tensionForCircularMotion(radius, state.angle, state.angVel);
+
+  if (state.tension <= 0) {
+    switchToProjectile();
+  }
+
+  recordTrail(true);
+}
+
+function syncStoppedRecontactAfterNailMove() {
+  state.activePivot = "O";
+  state.currentRadius = nailRadius();
+  state.pos = positionOnNailCircle(state.angle);
+  recordTrail(true);
 }
 
 function stepAroundOriginalPivot(dt) {
@@ -564,7 +619,7 @@ function buildStatusNote(prediction) {
     case "recontact_stop":
       return "糸は切れていないので、O からの距離が再び l - AO になった瞬間でアニメーションを止めています。";
     default:
-      return "小球をドラッグして高さを決めるか、そのまま左水平から手放せます。";
+      return "小球をドラッグするか、手放す角度スライダーで開始位置を決められます。";
   }
 }
 
@@ -919,7 +974,7 @@ function moveDrag(event) {
 
   const worldPoint = screenToWorld(event.clientX, event.clientY);
   const angle = Math.atan2(worldPoint.x, worldPoint.y);
-  setPreparedAngle(angle);
+  setPreparedAngle(angle, true);
   state.trail = [{ ...state.pos }];
 }
 
@@ -947,13 +1002,27 @@ function setNailDistance(nextValue) {
   nailSlider.value = state.nailDistance.toFixed(2);
   syncNailLabel();
 
-  if (isMotionMode()) {
-    resetToReady(state.preparedAngle);
+  if (state.mode === "swing_a") {
+    return;
+  }
+
+  if (state.mode === "swing_nail") {
+    syncSwingAfterNailMove();
+    return;
+  }
+
+  if (state.mode === "projectile") {
+    state.projectileWentInsideCircle = distanceFromNail(state.pos) < nailRadius() - 1e-5;
+    return;
+  }
+
+  if (state.mode === "recontact_stop") {
+    syncStoppedRecontactAfterNailMove();
     return;
   }
 
   const wasDragging = state.mode === "dragging";
-  setPreparedAngle(state.preparedAngle);
+  setPreparedAngle(state.preparedAngle, true);
   state.mode = wasDragging ? "dragging" : "ready";
   state.trail = [{ ...state.pos }];
 }
@@ -1003,6 +1072,19 @@ nailSlider.addEventListener("input", (event) => {
   setNailDistance(Number(event.target.value));
 });
 
+releaseAngleSlider.addEventListener("input", (event) => {
+  const nextAngle = (Number(event.target.value) * Math.PI) / 180;
+  const syncPose =
+    state.mode === "ready" || state.mode === "dragging" || state.mode === "recontact_stop";
+
+  setPreparedAngle(nextAngle, syncPose, syncPose);
+
+  if (syncPose) {
+    state.mode = state.mode === "dragging" ? "dragging" : "ready";
+    state.trail = [{ ...state.pos }];
+  }
+});
+
 speedSlider.addEventListener("input", (event) => {
   setTimeScale(Number(event.target.value));
 });
@@ -1039,6 +1121,7 @@ window.addEventListener("resize", updateCanvasSize);
 updateCanvasSize();
 applyExamplePreset();
 setTimeScale(CONFIG.defaultTimeScale);
+syncReleaseAngleLabel();
 updateReadout();
 drawScene();
 requestAnimationFrame(animationFrame);

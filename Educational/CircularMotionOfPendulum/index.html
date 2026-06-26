@@ -32,7 +32,23 @@
           <section class="card controls">
             <h2>操作</h2>
             <p class="helper">
-              小球は左水平から右水平までドラッグできます。離すとその角度から静かにスタートします。
+              小球はドラッグでも、下のスライダーでも開始位置を変えられます。離すとその角度から静かにスタートします。
+            </p>
+
+            <div class="slider-row">
+              <label for="releaseAngleSlider">手放す角度 θ0</label>
+              <span id="releaseAngleValue">-90.0°</span>
+            </div>
+            <input
+              id="releaseAngleSlider"
+              type="range"
+              min="-90"
+              max="90"
+              step="1"
+              value="-90"
+            />
+            <p class="helper">
+              左水平が -90°、真下が 0°、右水平が +90° です。
             </p>
 
             <div class="slider-row">
@@ -48,7 +64,7 @@
               value="0.80"
             />
             <p class="helper" id="nailHelp">
-              動作中に釘を動かすと、同じ持ち上げ角からやり直します。
+              振動中でもそのまま高さを変えられます。O に掛かった後は、新しい半径へなめらかに追従します。
             </p>
 
             <div class="slider-row">
@@ -106,7 +122,7 @@
               </div>
             </dl>
             <p id="statusNote" class="status-note">
-              小球をドラッグして高さを決めるか、そのまま左水平から手放せます。
+              小球をドラッグするか、手放す角度スライダーで開始位置を決められます。
             </p>
           </section>
 
