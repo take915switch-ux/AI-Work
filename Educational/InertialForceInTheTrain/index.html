@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>慣性系と非慣性系で見る斜面上の台車</title>
+  <style>
+    :root {
+      --bg-top: #f3efe6;
+      --bg-bottom: #dbe6f0;
+      --panel: rgba(255, 252, 246, 0.88);
+      --panel-strong: rgba(255, 255, 255, 0.96);
+      --ink: #213448;
+      --muted: #5b6e7f;
+      --line: rgba(33, 52, 72, 0.12);
+      --accent: #b85c38;
+      --accent-soft: rgba(184, 92, 56, 0.14);
+      --highlight: #f0a04b;
+      --blue: #2a68a2;
+      --green: #44796b;
+      --shadow: 0 18px 42px rgba(33, 52, 72, 0.12);
+      --radius: 24px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(255, 244, 219, 0.9), transparent 35%),
+        radial-gradient(circle at top right, rgba(188, 213, 234, 0.75), transparent 30%),
+        linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.16) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.16) 1px, transparent 1px);
+      background-size: 28px 28px;
+      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.34), transparent 80%);
+    }
+
+    .shell {
+      width: min(1360px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 22px 0 32px;
+    }
+
+    .controls {
+      padding: 22px;
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(14px);
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .control-card {
+      padding: 16px 16px 14px;
+      background: rgba(255, 255, 255, 0.78);
+      border-radius: 18px;
+      border: 1px solid rgba(33, 52, 72, 0.08);
+    }
+
+    .control-card label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 0.98rem;
+    }
+
+    .value {
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      margin-top: 12px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    button {
+      appearance: none;
+      border: none;
+      border-radius: 999px;
+      padding: 12px 18px;
+      font: inherit;
+      font-weight: 700;
+      color: var(--ink);
+      background: var(--panel-strong);
+      box-shadow: 0 6px 18px rgba(33, 52, 72, 0.08);
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 24px rgba(33, 52, 72, 0.12);
+    }
+
+    button.primary {
+      background: linear-gradient(135deg, #d97a4a, #f0a04b);
+      color: #fffaf4;
+    }
+
+    .readouts {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .readout {
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid rgba(33, 52, 72, 0.08);
+    }
+
+    .readout .label {
+      color: var(--muted);
+      font-size: 0.86rem;
+      margin-bottom: 8px;
+    }
+
+    .readout .big {
+      font-size: clamp(1.2rem, 2vw, 1.55rem);
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .scene-grid {
+      margin-top: 24px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .scene-card {
+      padding: 14px;
+      border-radius: 28px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255, 255, 255, 0.72);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 22px;
+      background: linear-gradient(180deg, #fbfcff, #eef4f9);
+      border: 1px solid rgba(33, 52, 72, 0.1);
+    }
+
+    @media (max-width: 1080px) {
+      .control-grid,
+      .readouts,
+      .scene-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .shell {
+        width: min(100% - 20px, 1360px);
+        padding-top: 20px;
+      }
+
+      .controls,
+      .scene-card {
+        border-radius: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="controls">
+      <div class="control-grid">
+        <div class="control-card">
+          <label for="thetaRange">
+            <span>斜面角 θ</span>
+            <span class="value" id="thetaValue">40.0°</span>
+          </label>
+          <input id="thetaRange" type="range" min="10" max="50" step="0.5" value="40">
+        </div>
+        <div class="control-card">
+          <label for="accelRange">
+            <span>電車の加速度 a</span>
+            <span class="value" id="accelValue">5.00 m/s²</span>
+          </label>
+          <input id="accelRange" type="range" min="0" max="12" step="0.05" value="5">
+        </div>
+        <div class="control-card">
+          <label for="speedRange">
+            <span>再生速度</span>
+            <span class="value" id="speedValue">1.0×</span>
+          </label>
+          <input id="speedRange" type="range" min="0.4" max="1.8" step="0.1" value="1">
+        </div>
+      </div>
+
+      <div class="button-row">
+        <button class="primary" id="playPauseBtn">一時停止</button>
+        <button id="resetBtn">リセット</button>
+        <button id="equilibriumBtn">静止条件 a = g tanθ</button>
+        <button id="downhillBtn">車内で下る例</button>
+        <button id="uphillBtn">車内で上る例</button>
+      </div>
+
+      <div class="readouts">
+        <div class="readout">
+          <div class="label">車内から見た斜面方向加速度</div>
+          <div class="big" id="relativeAccelReadout">a' = 2.47 m/s²</div>
+        </div>
+        <div class="readout">
+          <div class="label">車内で静止して見える条件</div>
+          <div class="big" id="equilibriumReadout">a₀ = 8.22 m/s²</div>
+        </div>
+        <div class="readout">
+          <div class="label">現在の見え方</div>
+          <div class="big" id="stateReadout">台車は斜面下向きに動く</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="scene-grid">
+      <article class="scene-card">
+        <canvas id="inertialCanvas" width="560" height="340" aria-label="慣性系のアニメーション"></canvas>
+      </article>
+
+      <article class="scene-card">
+        <canvas id="nonInertialCanvas" width="560" height="340" aria-label="非慣性系のアニメーション"></canvas>
+      </article>
+    </section>
+  </div>
+
+  <script>
+    const G = 9.8;
+    const TRACK_LENGTH_METERS = 11.2;
+    const CART_LENGTH_METERS = 1.25;
+    const INITIAL_CART_POSITION = 4.2;
+    const INITIAL_THETA_DEG = 40;
+    const INITIAL_ACCELERATION = 5;
+    const SIM_DURATION = 5.6;
+    const WORLD_TRANSLATION_SCALE = 5.4;
+    const FORCE_SCALE = 6.2;
+    const ACCEL_VECTOR_SCALE = 14;
+    const EPSILON = 0.045;
+
+    const state = {
+      thetaDeg: INITIAL_THETA_DEG,
+      acceleration: INITIAL_ACCELERATION,
+      speed: 1,
+      playing: true,
+      time: 0,
+      lastTimestamp: 0
+    };
+
+    const thetaRange = document.getElementById("thetaRange");
+    const accelRange = document.getElementById("accelRange");
+    const speedRange = document.getElementById("speedRange");
+    const playPauseBtn = document.getElementById("playPauseBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const equilibriumBtn = document.getElementById("equilibriumBtn");
+    const downhillBtn = document.getElementById("downhillBtn");
+    const uphillBtn = document.getElementById("uphillBtn");
+
+    const inertialCanvas = document.getElementById("inertialCanvas");
+    const nonInertialCanvas = document.getElementById("nonInertialCanvas");
+    const inertialCtx = inertialCanvas.getContext("2d");
+    const nonInertialCtx = nonInertialCanvas.getContext("2d");
+
+    const readouts = {
+      theta: document.getElementById("thetaValue"),
+      accel: document.getElementById("accelValue"),
+      speed: document.getElementById("speedValue"),
+      relative: document.getElementById("relativeAccelReadout"),
+      equilibrium: document.getElementById("equilibriumReadout"),
+      state: document.getElementById("stateReadout")
+    };
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function formatSigned(value) {
+      return `${value >= 0 ? "" : "−"}${Math.abs(value).toFixed(2)}`;
+    }
+
+    function toRadians(deg) {
+      return deg * Math.PI / 180;
+    }
+
+    function setupHiDpi(canvas, context) {
+      const ratio = window.devicePixelRatio || 1;
+      const baseWidth = Number(canvas.dataset.baseWidth || canvas.getAttribute("width"));
+      const baseHeight = Number(canvas.dataset.baseHeight || canvas.getAttribute("height"));
+      canvas.dataset.baseWidth = String(baseWidth);
+      canvas.dataset.baseHeight = String(baseHeight);
+      canvas.style.aspectRatio = `${baseWidth} / ${baseHeight}`;
+
+      if (
+        canvas._ratio !== ratio ||
+        canvas.width !== baseWidth * ratio ||
+        canvas.height !== baseHeight * ratio
+      ) {
+        canvas._ratio = ratio;
+        canvas.width = baseWidth * ratio;
+        canvas.height = baseHeight * ratio;
+      }
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    }
+
+    function resetSimulation(keepPlaying = true) {
+      state.time = 0;
+      state.lastTimestamp = 0;
+      if (keepPlaying) {
+        state.playing = true;
+        playPauseBtn.textContent = "一時停止";
+      }
+    }
+
+    function resetToDefaults() {
+      state.thetaDeg = INITIAL_THETA_DEG;
+      state.acceleration = INITIAL_ACCELERATION;
+      thetaRange.value = String(INITIAL_THETA_DEG);
+      accelRange.value = String(INITIAL_ACCELERATION);
+    }
+
+    function getDerived() {
+      const theta = toRadians(state.thetaDeg);
+      const sinTheta = Math.sin(theta);
+      const cosTheta = Math.cos(theta);
+      const relativeAccel = G * sinTheta - state.acceleration * cosTheta;
+      const equilibriumAccel = G * Math.tan(theta);
+      const maxPosition = TRACK_LENGTH_METERS - CART_LENGTH_METERS * 0.5;
+      const minPosition = CART_LENGTH_METERS * 0.5;
+      const freePosition = INITIAL_CART_POSITION + 0.5 * relativeAccel * state.time * state.time;
+      const cartPosition = clamp(freePosition, minPosition, maxPosition);
+      const cartVelocity = freePosition === cartPosition ? relativeAccel * state.time : 0;
+      const worldShift = 0.5 * state.acceleration * state.time * state.time * WORLD_TRANSLATION_SCALE;
+      const normalMagnitude = G * cosTheta + state.acceleration * sinTheta;
+      const absoluteAccelX = state.acceleration + relativeAccel * cosTheta;
+      const absoluteAccelY = relativeAccel * sinTheta;
+      let boundaryTime = null;
+      let boundaryPosition = null;
+
+      if (Math.abs(relativeAccel) >= EPSILON) {
+        const targetPosition = relativeAccel > 0 ? maxPosition : minPosition;
+        const travelDistance = Math.abs(targetPosition - INITIAL_CART_POSITION);
+        const hitTime = Math.sqrt((2 * travelDistance) / Math.abs(relativeAccel));
+        if (hitTime < SIM_DURATION) {
+          boundaryTime = hitTime;
+          boundaryPosition = targetPosition;
+        }
+      }
+
+      const relativeState =
+        Math.abs(relativeAccel) < EPSILON
+          ? "ほぼ静止して見える"
+          : relativeAccel > 0
+            ? "台車は斜面下向きに動く"
+            : "台車は斜面上向きに動く";
+
+      return {
+        theta,
+        sinTheta,
+        cosTheta,
+        relativeAccel,
+        equilibriumAccel,
+        cartPosition,
+        cartVelocity,
+        worldShift,
+        normalMagnitude,
+        absoluteAccelX,
+        absoluteAccelY,
+        boundaryTime,
+        boundaryPosition,
+        relativeState
+      };
+    }
+
+    function updateReadouts(derived) {
+      readouts.theta.textContent = `${state.thetaDeg.toFixed(1)}°`;
+      readouts.accel.textContent = `${state.acceleration.toFixed(2)} m/s²`;
+      readouts.speed.textContent = `${state.speed.toFixed(1)}×`;
+      readouts.relative.textContent = `a' = ${formatSigned(derived.relativeAccel)} m/s²`;
+      readouts.equilibrium.textContent = `a₀ = ${derived.equilibriumAccel.toFixed(2)} m/s²`;
+      readouts.state.textContent = derived.relativeState;
+    }
+
+    function drawArrow(ctx, fromX, fromY, toX, toY, color, label, options = {}) {
+      const dx = toX - fromX;
+      const dy = toY - fromY;
+      const length = Math.hypot(dx, dy);
+      if (length < 1) {
+        return;
+      }
+
+      const head = options.headSize || 10;
+      const lineWidth = options.lineWidth || 3;
+      const labelOffsetX = options.labelOffsetX || 0;
+      const labelOffsetY = options.labelOffsetY || 0;
+      const labelPlacement = options.labelPlacement || "mid";
+      const labelAlong = options.labelAlong || 18;
+      const labelPerp = options.labelPerp ?? 15;
+      const unitX = dx / length;
+      const unitY = dy / length;
+      const baseX = toX - unitX * head;
+      const baseY = toY - unitY * head;
+      const perpX = -unitY;
+      const perpY = unitX;
+
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = lineWidth;
+      if (options.dash) {
+        ctx.setLineDash(options.dash);
+      }
+      ctx.beginPath();
+      ctx.moveTo(fromX, fromY);
+      ctx.lineTo(baseX, baseY);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(toX, toY);
+      ctx.lineTo(baseX + perpX * head * 0.55, baseY + perpY * head * 0.55);
+      ctx.lineTo(baseX - perpX * head * 0.55, baseY - perpY * head * 0.55);
+      ctx.closePath();
+      ctx.fill();
+
+      if (label) {
+        ctx.setLineDash([]);
+        ctx.font = options.font || "700 14px 'Hiragino Sans', 'Yu Gothic', sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        const labelX =
+          labelPlacement === "end"
+            ? toX + unitX * labelAlong + perpX * labelPerp + labelOffsetX
+            : fromX + dx * 0.56 + perpX * labelPerp + labelOffsetX;
+        const labelY =
+          labelPlacement === "end"
+            ? toY + unitY * labelAlong + perpY * labelPerp + labelOffsetY
+            : fromY + dy * 0.56 + perpY * labelPerp + labelOffsetY;
+        ctx.fillStyle = options.labelColor || color;
+        ctx.fillText(label, labelX, labelY);
+      }
+      ctx.restore();
+    }
+
+    function drawTextPill(ctx, x, y, text, options = {}) {
+      ctx.save();
+      ctx.font = options.font || "700 12px 'Hiragino Sans', 'Yu Gothic', sans-serif";
+      const paddingX = options.paddingX || 10;
+      const paddingY = options.paddingY || 6;
+      const textWidth = ctx.measureText(text).width;
+      const width = textWidth + paddingX * 2;
+      const height = 28;
+      ctx.fillStyle = options.background || "rgba(255,255,255,0.86)";
+      roundRect(ctx, x, y, width, height, 14);
+      ctx.fill();
+      ctx.fillStyle = options.color || "#213448";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, x + width / 2, y + height / 2 + 0.5);
+      ctx.restore();
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      const radius = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.arcTo(x + w, y, x + w, y + h, radius);
+      ctx.arcTo(x + w, y + h, x, y + h, radius);
+      ctx.arcTo(x, y + h, x, y, radius);
+      ctx.arcTo(x, y, x + w, y, radius);
+      ctx.closePath();
+    }
+
+    function drawTrainBody(ctx, geometry) {
+      const { trainX, trainY, trainWidth, trainHeight } = geometry;
+      ctx.save();
+
+      ctx.fillStyle = "#f7f3ec";
+      ctx.strokeStyle = "#544c47";
+      ctx.lineWidth = 2;
+      roundRect(ctx, trainX, trainY, trainWidth, trainHeight, 28);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#ddd4c9";
+      ctx.strokeStyle = "#5d5550";
+      roundRect(ctx, trainX + 28, trainY + trainHeight - 12, 76, 22, 6);
+      ctx.fill();
+      ctx.stroke();
+      roundRect(ctx, trainX + trainWidth - 104, trainY + trainHeight - 12, 76, 22, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      const wheelY = trainY + trainHeight + 12;
+      const wheelXs = [trainX + 52, trainX + 112, trainX + trainWidth - 112, trainX + trainWidth - 52];
+      ctx.fillStyle = "#fbfaf6";
+      ctx.strokeStyle = "#3d3835";
+      wheelXs.forEach((wheelX) => {
+        ctx.beginPath();
+        ctx.arc(wheelX, wheelY, 21, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      });
+      ctx.restore();
+    }
+
+    function getSceneGeometry(trainShift, derived) {
+      const trainX = 44 + trainShift;
+      const trainY = 58;
+      const trainWidth = 432;
+      const trainHeight = 182;
+      const slopeBottom = { x: trainX + 346, y: trainY + 148 };
+      const unit = { x: Math.cos(derived.theta), y: Math.sin(derived.theta) };
+      const normal = { x: Math.sin(derived.theta), y: -Math.cos(derived.theta) };
+      const supportLeftX = trainX + 76;
+      const supportTopY = trainY + 28;
+      const distanceToTop = (slopeBottom.y - supportTopY) / Math.max(unit.y, 0.001);
+      const distanceToLeft = (slopeBottom.x - supportLeftX) / Math.max(unit.x, 0.001);
+      const slopeLength = Math.min(distanceToTop, distanceToLeft);
+      const slopeTop = {
+        x: slopeBottom.x - unit.x * slopeLength,
+        y: slopeBottom.y - unit.y * slopeLength
+      };
+      const slopeScale = slopeLength / TRACK_LENGTH_METERS;
+      const cartCenter = {
+        x: slopeTop.x + unit.x * derived.cartPosition * slopeScale + normal.x * 18,
+        y: slopeTop.y + unit.y * derived.cartPosition * slopeScale + normal.y * 18
+      };
+
+      return {
+        trainX,
+        trainY,
+        trainWidth,
+        trainHeight,
+        slopeBottom,
+        slopeTop,
+        slopeLength,
+        unit,
+        normal,
+        slopeScale,
+        cartCenter,
+        thetaArcCenter: { x: slopeBottom.x - 18, y: slopeBottom.y + 1 }
+      };
+    }
+
+    function drawGround(ctx, worldShift = 0) {
+      const offset = worldShift % 72;
+      ctx.save();
+      ctx.strokeStyle = "rgba(33, 52, 72, 0.18)";
+      ctx.lineWidth = 3;
+      for (let x = -72; x < 632; x += 72) {
+        ctx.beginPath();
+        ctx.moveTo(x - offset, 292);
+        ctx.lineTo(x + 42 - offset, 292);
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = "rgba(42, 104, 162, 0.18)";
+      ctx.lineWidth = 2;
+      for (let x = 28; x < 632; x += 72) {
+        const shiftedX = x - offset;
+        ctx.beginPath();
+        ctx.moveTo(shiftedX, 292);
+        ctx.lineTo(shiftedX, 325);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawTrack(ctx, geometry) {
+      ctx.save();
+      ctx.strokeStyle = "#5d5148";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(geometry.slopeTop.x, geometry.slopeTop.y);
+      ctx.lineTo(geometry.slopeBottom.x, geometry.slopeBottom.y);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(geometry.slopeTop.x, geometry.slopeTop.y);
+      ctx.lineTo(geometry.slopeTop.x, geometry.trainY + geometry.trainHeight - 36);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawThetaMark(ctx, geometry, thetaDeg) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(93, 81, 72, 0.9)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(geometry.slopeBottom.x - 54, geometry.slopeBottom.y);
+      ctx.lineTo(geometry.slopeBottom.x - 6, geometry.slopeBottom.y);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(geometry.slopeBottom.x - 12, geometry.slopeBottom.y - 1, 34, Math.PI, Math.PI + thetaDeg * Math.PI / 180);
+      ctx.stroke();
+      roundRect(ctx, geometry.slopeBottom.x - 100, geometry.slopeBottom.y - 18, 34, 30, 15);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
+      ctx.fill();
+      ctx.font = "italic 22px 'Hiragino Mincho ProN', 'Yu Mincho', serif";
+      ctx.fillStyle = "#4c443f";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("θ", geometry.slopeBottom.x - 83, geometry.slopeBottom.y - 3);
+      ctx.restore();
+    }
+
+    function drawCart(ctx, geometry) {
+      const { cartCenter } = geometry;
+      ctx.save();
+      ctx.translate(cartCenter.x, cartCenter.y);
+      ctx.rotate(Math.atan2(geometry.unit.y, geometry.unit.x));
+
+      ctx.fillStyle = "#fcfaf5";
+      ctx.strokeStyle = "#4f4742";
+      ctx.lineWidth = 2;
+      ctx.fillRect(-27, -20, 54, 18);
+      ctx.strokeRect(-27, -20, 54, 18);
+
+      ctx.fillStyle = "#e6ddd2";
+      ctx.fillRect(-18, -30, 30, 10);
+      ctx.strokeRect(-18, -30, 30, 10);
+
+      ctx.fillStyle = "#ffffff";
+      [-16, 16].forEach((x) => {
+        ctx.beginPath();
+        ctx.arc(x, -2, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      });
+
+      ctx.restore();
+    }
+
+    function drawBackgroundLabel(ctx, text) {
+      drawTextPill(ctx, 18, 16, text, {
+        background: "rgba(255, 255, 255, 0.88)",
+        color: "#2a68a2",
+        paddingX: 12
+      });
+    }
+
+    function drawReferenceMarkers(ctx, worldShift) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(42, 104, 162, 0.28)";
+      ctx.fillStyle = "rgba(42, 104, 162, 0.7)";
+      ctx.lineWidth = 1.4;
+      for (let i = -2; i < 11; i += 1) {
+        const x = (i * 86) - (worldShift % 86);
+        ctx.beginPath();
+        ctx.moveTo(x, 40);
+        ctx.lineTo(x, 264);
+        ctx.stroke();
+        ctx.fillRect(x - 2, 264, 4, 14);
+      }
+      ctx.restore();
+    }
+
+    function drawTrajectory(ctx, points) {
+      if (points.length < 2) {
+        return;
+      }
+
+      const hasLength = points.some((point, index) => {
+        if (index === 0) {
+          return false;
+        }
+        const previous = points[index - 1];
+        return Math.hypot(point.x - previous.x, point.y - previous.y) >= 2;
+      });
+
+      if (!hasLength) {
+        return;
+      }
+
+      ctx.save();
+      ctx.strokeStyle = "rgba(33, 52, 72, 0.45)";
+      ctx.lineWidth = 1.4;
+      ctx.setLineDash([4, 5]);
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let index = 1; index < points.length; index += 1) {
+        ctx.lineTo(points[index].x, points[index].y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawAccelerationNotes(ctx, derived, geometry, mode) {
+      const start = geometry.cartCenter;
+      if (mode === "inertial") {
+        const screenAccelX =
+          state.acceleration * WORLD_TRANSLATION_SCALE +
+          derived.relativeAccel * geometry.unit.x * geometry.slopeScale;
+        const screenAccelY =
+          derived.relativeAccel * geometry.unit.y * geometry.slopeScale;
+        const screenAccelMagnitude = Math.hypot(screenAccelX, screenAccelY) || 1;
+        const inertialArrowLength = Math.min(68, 26 + screenAccelMagnitude * 0.34);
+        drawArrow(
+          ctx,
+          start.x,
+          start.y,
+          start.x + (screenAccelX / screenAccelMagnitude) * inertialArrowLength,
+          start.y + (screenAccelY / screenAccelMagnitude) * inertialArrowLength,
+          "#2a68a2",
+          "加速度",
+          { lineWidth: 3, headSize: 11, labelPlacement: "end", labelAlong: 20, labelPerp: -18, labelOffsetY: -2 }
+        );
+      } else {
+        drawArrow(
+          ctx,
+          start.x,
+          start.y,
+          start.x + geometry.unit.x * derived.relativeAccel * ACCEL_VECTOR_SCALE,
+          start.y + geometry.unit.y * derived.relativeAccel * ACCEL_VECTOR_SCALE,
+          "#2a68a2",
+          "加速度",
+          { lineWidth: 3, headSize: 11, labelPlacement: "end", labelAlong: 20, labelPerp: -18, labelOffsetY: -2 }
+        );
+      }
+    }
+
+    function drawForceVectors(ctx, derived, geometry, mode) {
+      const start = geometry.cartCenter;
+      const gravityLength = G * FORCE_SCALE;
+      const normalLength = derived.normalMagnitude * FORCE_SCALE;
+
+      drawArrow(
+        ctx,
+        start.x,
+        start.y,
+        start.x,
+        start.y + gravityLength,
+        "#d85757",
+        "mg",
+        { lineWidth: 3.2, headSize: 11, labelPlacement: "end", labelPerp: 0, labelAlong: 14 }
+      );
+
+      drawArrow(
+        ctx,
+        start.x,
+        start.y,
+        start.x + geometry.normal.x * normalLength,
+        start.y + geometry.normal.y * normalLength,
+        "#d85757",
+        "N",
+        { lineWidth: 3.2, headSize: 11, labelPlacement: "end", labelPerp: 0, labelAlong: 16 }
+      );
+
+      if (mode === "nonInertial") {
+        drawArrow(
+          ctx,
+          start.x,
+          start.y,
+          start.x - state.acceleration * FORCE_SCALE,
+          start.y,
+          "#d85757",
+          "慣性力 ma",
+          { lineWidth: 3.2, headSize: 11, dash: [7, 5], labelPlacement: "end", labelAlong: 6, labelPerp: -18 }
+        );
+      }
+    }
+
+    function drawTrainAcceleration(ctx, geometry) {
+      const baseX = geometry.trainX + geometry.trainWidth + 8;
+      const baseY = geometry.trainY + 78;
+      const endX = baseX + 44;
+      drawArrow(ctx, baseX, baseY, endX, baseY, "#d18a1d", "a", {
+        lineWidth: 4,
+        headSize: 13,
+        labelPerp: 18
+      });
+    }
+
+    function renderScene(ctx, mode, derived) {
+      setupHiDpi(mode === "inertial" ? inertialCanvas : nonInertialCanvas, ctx);
+      ctx.clearRect(0, 0, 560, 340);
+      drawGround(ctx, mode === "inertial" ? 0 : derived.worldShift);
+      drawReferenceMarkers(ctx, mode === "inertial" ? 0 : derived.worldShift);
+
+      const geometry = getSceneGeometry(mode === "inertial" ? derived.worldShift : 0, derived);
+      const startGeometry = getSceneGeometry(0, {
+        theta: derived.theta,
+        cartPosition: INITIAL_CART_POSITION
+      });
+      const endTime = derived.boundaryTime ?? SIM_DURATION;
+      const endShift = 0.5 * state.acceleration * endTime * endTime * WORLD_TRANSLATION_SCALE;
+      const endPosition = derived.boundaryPosition ?? clamp(
+        INITIAL_CART_POSITION + 0.5 * derived.relativeAccel * endTime * endTime,
+        CART_LENGTH_METERS * 0.5,
+        TRACK_LENGTH_METERS - CART_LENGTH_METERS * 0.5
+      );
+      const trajectoryPoints = [startGeometry.cartCenter];
+
+      if (mode === "inertial" && derived.boundaryTime !== null && derived.boundaryPosition !== null) {
+        const hitShift = 0.5 * state.acceleration * derived.boundaryTime * derived.boundaryTime * WORLD_TRANSLATION_SCALE;
+        const hitGeometry = getSceneGeometry(hitShift, {
+          theta: derived.theta,
+          cartPosition: derived.boundaryPosition
+        });
+        trajectoryPoints.push(hitGeometry.cartCenter);
+      } else {
+        const endGeometry = getSceneGeometry(mode === "inertial" ? endShift : 0, {
+          theta: derived.theta,
+          cartPosition: endPosition
+        });
+        trajectoryPoints.push(endGeometry.cartCenter);
+      }
+
+      drawTrainBody(ctx, geometry);
+      drawTrack(ctx, geometry);
+      drawThetaMark(ctx, geometry, state.thetaDeg);
+      drawTrajectory(ctx, trajectoryPoints);
+      drawCart(ctx, geometry);
+      drawForceVectors(ctx, derived, geometry, mode);
+      drawAccelerationNotes(ctx, derived, geometry, mode);
+      drawTrainAcceleration(ctx, geometry);
+
+      drawBackgroundLabel(
+        ctx,
+        mode === "inertial"
+          ? "慣性系(外から見る)"
+          : "非慣性系(乗って見る)"
+      );
+
+      drawTextPill(
+        ctx,
+        392,
+        16,
+        `t = ${state.time.toFixed(2)} s`,
+        {
+          background: "rgba(255,255,255,0.88)",
+          color: "#213448",
+          paddingX: 11
+        }
+      );
+    }
+
+    function render() {
+      const derived = getDerived();
+      updateReadouts(derived);
+      renderScene(inertialCtx, "inertial", derived);
+      renderScene(nonInertialCtx, "nonInertial", derived);
+    }
+
+    function tick(timestamp) {
+      if (!state.lastTimestamp) {
+        state.lastTimestamp = timestamp;
+      }
+      const dt = (timestamp - state.lastTimestamp) / 1000;
+      state.lastTimestamp = timestamp;
+
+      if (state.playing) {
+        state.time += dt * state.speed;
+        const playingDerived = getDerived();
+        if (
+          playingDerived.boundaryTime !== null &&
+          state.time >= playingDerived.boundaryTime
+        ) {
+          resetSimulation(true);
+        } else if (state.time > SIM_DURATION) {
+          state.time = 0;
+        }
+      }
+
+      render();
+      requestAnimationFrame(tick);
+    }
+
+    function setAcceleration(value, reset = true) {
+      state.acceleration = clamp(value, Number(accelRange.min), Number(accelRange.max));
+      accelRange.value = state.acceleration.toFixed(2);
+      if (reset) {
+        resetSimulation();
+      }
+      render();
+    }
+
+    thetaRange.addEventListener("input", (event) => {
+      state.thetaDeg = Number(event.target.value);
+      resetSimulation();
+      render();
+    });
+
+    accelRange.addEventListener("input", (event) => {
+      setAcceleration(Number(event.target.value));
+    });
+
+    speedRange.addEventListener("input", (event) => {
+      state.speed = Number(event.target.value);
+      render();
+    });
+
+    playPauseBtn.addEventListener("click", () => {
+      state.playing = !state.playing;
+      state.lastTimestamp = 0;
+      playPauseBtn.textContent = state.playing ? "一時停止" : "再生";
+      render();
+    });
+
+    resetBtn.addEventListener("click", () => {
+      resetToDefaults();
+      resetSimulation(state.playing);
+      render();
+    });
+
+    equilibriumBtn.addEventListener("click", () => {
+      const equilibrium = G * Math.tan(toRadians(state.thetaDeg));
+      setAcceleration(equilibrium);
+    });
+
+    downhillBtn.addEventListener("click", () => {
+      const equilibrium = G * Math.tan(toRadians(state.thetaDeg));
+      setAcceleration(Math.max(0, equilibrium * 0.62));
+    });
+
+    uphillBtn.addEventListener("click", () => {
+      const equilibrium = G * Math.tan(toRadians(state.thetaDeg));
+      setAcceleration(Math.min(12, equilibrium * 1.34));
+    });
+
+    window.addEventListener("resize", render);
+
+    render();
+    requestAnimationFrame(tick);
+  </script>
+</body>
+</html>
