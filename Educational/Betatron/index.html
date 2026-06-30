@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ベータトロン可視化シミュレーター</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <main>
+        <header class="page-head">
+            <div>
+                <p class="eyebrow">Electromagnetism Simulation</p>
+                <h1>ベータトロン可視化シミュレーター</h1>
+                <p class="subtitle">
+                    電荷の向きと磁場の増え方を切り替えて、荷電粒子の軌道が
+                    「外へ広がる」「内へ縮む」「半径をほぼ保つ」違いを一画面で比べられます。
+                </p>
+            </div>
+            <div class="formula-row" aria-label="formula guide">
+                <span class="formula-pill">r = mv / |q|B</span>
+                <span class="formula-pill">ε = - dΦ / dt</span>
+            </div>
+        </header>
+
+        <section class="layout">
+            <div class="panel stage-panel">
+                <div class="panel-head">
+                    <div>
+                        <h2>シミュレーション</h2>
+                        <p class="panel-copy">赤いほど磁場が強く、軌跡の変化が大きくなります。</p>
+                    </div>
+                    <div class="status-pill">
+                        <span class="status-dot"></span>
+                        <span id="statusText">待機中</span>
+                    </div>
+                </div>
+
+                <div class="canvas-wrap">
+                    <canvas id="simCanvas" width="900" height="900" aria-label="betatron simulation canvas"></canvas>
+                    <div class="canvas-note">
+                        <span>磁場ベクトル</span>
+                        <span class="note-swatch"></span>
+                        <span>荷電粒子の軌跡</span>
+                    </div>
+                </div>
+
+                <div class="legend-row">
+                    <div class="legend-chip">
+                        <span class="legend-dot negative"></span>
+                        <span>負電荷</span>
+                    </div>
+                    <div class="legend-chip">
+                        <span class="legend-dot positive"></span>
+                        <span>正電荷</span>
+                    </div>
+                    <div class="legend-chip">
+                        <span class="legend-line"></span>
+                        <span>現在の軌道半径</span>
+                    </div>
+                </div>
+            </div>
+
+            <aside class="sidebar">
+                <section class="card">
+                    <h2>操作</h2>
+                    <div class="control-stack">
+                        <div class="group">
+                            <span class="group-label">電荷</span>
+                            <div class="segmented">
+                                <button id="negativeBtn" class="seg-btn is-active" type="button">負電荷</button>
+                                <button id="positiveBtn" class="seg-btn" type="button">正電荷</button>
+                            </div>
+                        </div>
+
+                        <div class="group">
+                            <span class="group-label">磁場モード</span>
+                            <div class="mode-grid">
+                                <button id="modeResetBtn" class="mode-btn is-active" type="button">リセット</button>
+                                <button id="modeInnerBtn" class="mode-btn" type="button">内部の磁場が増加</button>
+                                <button id="modeGlobalBtn" class="mode-btn" type="button">全体の磁場が増加</button>
+                                <button id="modeBetatronBtn" class="mode-btn" type="button">ベータトロン原理</button>
+                            </div>
+                        </div>
+
+                        <div class="group">
+                            <span class="group-label">再生</span>
+                            <div class="action-grid">
+                                <button id="speedUpBtn" class="action-btn" type="button">描画↑</button>
+                                <button id="speedDownBtn" class="action-btn" type="button">描画↓</button>
+                                <button id="pauseBtn" class="action-btn strong" type="button">停止</button>
+                                <button id="backBtn" class="action-btn subtle" type="button">戻る</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h2>状態</h2>
+                    <div class="stats-grid">
+                        <div class="stat">
+                            <span class="stat-label">モード</span>
+                            <strong id="modeValue" class="stat-value">リセット</strong>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">電荷</span>
+                            <strong id="chargeValue" class="stat-value">負</strong>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">軌道半径</span>
+                            <strong id="radiusValue" class="stat-value">0</strong>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">粒子速度</span>
+                            <strong id="speedValue" class="stat-value">0</strong>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">軌道上の B</span>
+                            <strong id="orbitBValue" class="stat-value">0</strong>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">平均 B</span>
+                            <strong id="avgBValue" class="stat-value">0</strong>
+                        </div>
+                    </div>
+                    <div class="meter-block">
+                        <div class="meter-head">
+                            <span>描画倍率</span>
+                            <strong id="speedFactorValue">1.00x</strong>
+                        </div>
+                        <input id="speedSlider" type="range" min="0.5" max="3" step="0.25" value="1">
+                    </div>
+                    <div class="meter-block">
+                        <div class="meter-head">
+                            <span>左右の回転</span>
+                            <strong id="yawValue">-24°</strong>
+                        </div>
+                        <input id="yawSlider" type="range" min="-44" max="44" step="1" value="-24">
+                    </div>
+                    <div class="meter-block">
+                        <div class="meter-head">
+                            <span>視点の傾き</span>
+                            <strong id="tiltValue">58°</strong>
+                        </div>
+                        <input id="tiltSlider" type="range" min="22" max="76" step="1" value="58">
+                        <p class="meter-note">左右ドラッグで回転、上下ドラッグで傾きを変えられます。</p>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h2>解説</h2>
+                    <p id="modeDescription" class="explanation">
+                        円運動の半径を決めるのは <strong>速度 v</strong> と <strong>軌道上の磁場 B</strong> の比です。
+                        まずはリセット状態で円運動を見てから、各モードで変化を比べてみましょう。
+                    </p>
+                    <ul class="tip-list">
+                        <li>内部だけ磁場を強めると、粒子は加速しつつ外側へ広がります。</li>
+                        <li>全体を同じ割合で強めると、磁場の増加が勝って軌道は内側へ縮みます。</li>
+                        <li>ベータトロン原理では平均磁場を強め、軌道半径をほぼ一定に保ちます。</li>
+                    </ul>
+                </section>
+            </aside>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
