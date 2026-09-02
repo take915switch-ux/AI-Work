@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#fff8dd">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="みぎ？ひだり？">
+  <title>みぎ？ひだり？ゲーム</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <style>
+    :root {
+      --bg1: #fff9df;
+      --bg2: #e9f9ff;
+      --ink: #29323b;
+      --muted: #6b7480;
+      --right: #e84d7d;
+      --left: #228fc2;
+      --ok: #27a55f;
+      --warn: #e58a22;
+      --card: rgba(255,255,255,.94);
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html { background: var(--bg1); }
+    body {
+      margin: 0;
+      min-height: 100%;
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+      background: linear-gradient(180deg, var(--bg1), var(--bg2));
+      overscroll-behavior: none;
+    }
+    button { font: inherit; }
+    .app {
+      width: min(1000px, 100%);
+      margin: 0 auto;
+      padding: max(12px, env(safe-area-inset-top)) 14px max(28px, env(safe-area-inset-bottom));
+      text-align: center;
+    }
+    .topline {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin: 2px 0 6px;
+      font-weight: 900;
+      font-size: clamp(22px, 4vw, 36px);
+    }
+    .instruction {
+      min-height: 92px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 10px 12px;
+      font-size: clamp(38px, 8vw, 76px);
+      line-height: 1.08;
+      font-weight: 1000;
+      letter-spacing: .02em;
+      text-wrap: balance;
+    }
+    .instruction.right { color: var(--right); }
+    .instruction.left { color: var(--left); }
+    .instruction.success { color: var(--ok); animation: pop .32s ease-out; }
+    .instruction.wrong { color: var(--warn); }
+    @keyframes pop { 0% { transform: scale(.75); } 70% { transform: scale(1.10); } 100% { transform: scale(1); } }
+    .camera {
+      width: min(860px, 100%);
+      margin: 0 auto;
+      aspect-ratio: 16/9;
+      position: relative;
+      overflow: hidden;
+      border-radius: 24px;
+      background: #20242a;
+      border: 5px solid rgba(255,255,255,.95);
+      box-shadow: 0 6px 22px rgba(0,0,0,.12);
+    }
+    video, canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    video { transform: scaleX(-1); }
+    canvas { pointer-events: none; }
+    .camera-message {
+      position: absolute;
+      left: 50%;
+      bottom: 10px;
+      transform: translateX(-50%);
+      width: max-content;
+      max-width: 92%;
+      padding: 7px 15px;
+      border-radius: 999px;
+      background: rgba(0,0,0,.62);
+      color: white;
+      font-size: clamp(13px, 2.3vw, 20px);
+      font-weight: 800;
+      line-height: 1.25;
+    }
+    .hands {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 12px 0 6px;
+    }
+    .hand-status {
+      min-width: 145px;
+      padding: 8px 15px;
+      border-radius: 18px;
+      background: var(--card);
+      border: 1px solid rgba(0,0,0,.06);
+      font-size: clamp(17px, 3vw, 22px);
+      font-weight: 900;
+    }
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 13px;
+    }
+    .btn {
+      min-height: 56px;
+      border: 0;
+      border-radius: 999px;
+      padding: 13px 24px;
+      cursor: pointer;
+      font-size: clamp(19px, 3vw, 26px);
+      font-weight: 900;
+      box-shadow: 0 3px 0 rgba(0,0,0,.12);
+      touch-action: manipulation;
+    }
+    .btn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,.12); }
+    .btn:focus-visible { outline: 4px solid rgba(34,143,194,.35); outline-offset: 3px; }
+    .btn.start { background: #2da961; color: white; padding-inline: 34px; }
+    .btn.repeat { background: #ffd957; color: #3f3b22; }
+    .btn.stop { background: white; color: #4f5963; }
+    .btn:disabled { opacity: .55; cursor: default; transform: none; }
+    .note {
+      min-height: 1.4em;
+      margin: 9px auto 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .privacy {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .confetti {
+      position: fixed;
+      z-index: 100;
+      top: -60px;
+      pointer-events: none;
+      font-size: 32px;
+      animation: fall 2.25s linear forwards;
+    }
+    @keyframes fall { to { transform: translateY(110vh) rotate(520deg); opacity: 0; } }
+    @media (orientation: portrait) and (max-width: 820px) {
+      .camera { aspect-ratio: 4/3; }
+      .instruction { min-height: 80px; }
+    }
+    @media (max-width: 430px) {
+      .app { padding-inline: 8px; }
+      .camera { border-width: 3px; border-radius: 18px; }
+      .topline { gap: 10px; }
+      .hand-status { min-width: 132px; padding-inline: 10px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="topline" aria-live="polite">
+      <span id="roundText">0 / 10</span>
+      <span id="scoreText">⭐ 0</span>
+    </div>
+
+    <div id="instruction" class="instruction">「スタート！」を おしてね</div>
+
+    <section class="camera" aria-label="カメラ映像">
+      <video id="video" autoplay muted playsinline></video>
+      <canvas id="canvas"></canvas>
+      <div id="cameraMessage" class="camera-message">まだ カメラは ついていません</div>
+    </section>
+
+    <div class="hands" aria-live="polite">
+      <div id="leftStatus" class="hand-status">ひだりて：？</div>
+      <div id="rightStatus" class="hand-status">みぎて：？</div>
+    </div>
+
+    <div class="controls">
+      <button id="startButton" class="btn start" type="button">▶ スタート！</button>
+      <button id="repeatButton" class="btn repeat" type="button" hidden>🔊 もういちど</button>
+      <button id="stopButton" class="btn stop" type="button" hidden>■ おわる</button>
+    </div>
+
+    <div id="loading" class="note" aria-live="polite"></div>
+    <div class="privacy">カメラ映像は端末上で姿勢判定に使います。</div>
+  </main>
+
+  <script type="module">
+    import { PoseLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/+esm";
+
+    const MAX_ROUNDS = 10;
+    const CORRECT_HOLD_MS = 300;
+    const HANDS_DOWN_MS = 350;
+    const isIOSLike = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const INFERENCE_INTERVAL_MS = isIOSLike ? 95 : 65;
+
+    const video = document.querySelector("#video");
+    const canvas = document.querySelector("#canvas");
+    const ctx = canvas.getContext("2d");
+    const instruction = document.querySelector("#instruction");
+    const startButton = document.querySelector("#startButton");
+    const repeatButton = document.querySelector("#repeatButton");
+    const stopButton = document.querySelector("#stopButton");
+    const scoreText = document.querySelector("#scoreText");
+    const roundText = document.querySelector("#roundText");
+    const leftStatus = document.querySelector("#leftStatus");
+    const rightStatus = document.querySelector("#rightStatus");
+    const cameraMessage = document.querySelector("#cameraMessage");
+    const loading = document.querySelector("#loading");
+
+    let poseLandmarker = null;
+    let stream = null;
+    let cameraRunning = false;
+    let animationId = null;
+    let state = "idle";
+    let currentSide = null;
+    let previousSide = null;
+    let round = 0;
+    let score = 0;
+    let correctSince = null;
+    let downSince = null;
+    let wrongSince = null;
+    let lastInference = 0;
+
+    function setInstruction(text, className = "") {
+      instruction.textContent = text;
+      instruction.className = `instruction ${className}`.trim();
+    }
+
+    function updateScore() {
+      roundText.textContent = `${round} / ${MAX_ROUNDS}`;
+      scoreText.textContent = `⭐ ${score}`;
+    }
+
+    function chooseJapaneseVoice() {
+      const voices = speechSynthesis.getVoices();
+      return voices.find(v => v.lang === "ja-JP") || voices.find(v => v.lang?.startsWith("ja")) || null;
+    }
+
+    function speak(text) {
+      if (!("speechSynthesis" in window)) return;
+      try {
+        speechSynthesis.cancel();
+        speechSynthesis.resume();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = "ja-JP";
+        u.rate = 0.90;
+        u.pitch = 1.12;
+        u.volume = 1;
+        const voice = chooseJapaneseVoice();
+        if (voice) u.voice = voice;
+        speechSynthesis.speak(u);
+      } catch (e) {
+        console.warn("speech failed", e);
+      }
+    }
+
+    function speakInstruction() {
+      if (currentSide === "right") speak("みぎ、あげて！");
+      if (currentSide === "left") speak("ひだり、あげて！");
+    }
+
+    async function initializePose() {
+      if (poseLandmarker) return;
+      loading.textContent = "からだを みる じゅんびちゅう…";
+      const vision = await FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm"
+      );
+      const common = {
+        baseOptions: {
+          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+          delegate: "GPU"
+        },
+        runningMode: "VIDEO",
+        numPoses: 1,
+        minPoseDetectionConfidence: 0.5,
+        minPosePresenceConfidence: 0.5,
+        minTrackingConfidence: 0.5
+      };
+      try {
+        poseLandmarker = await PoseLandmarker.createFromOptions(vision, common);
+      } catch (e) {
+        console.warn("GPU delegate unavailable; falling back to CPU", e);
+        poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+          ...common,
+          baseOptions: { ...common.baseOptions, delegate: "CPU" }
+        });
+      }
+      loading.textContent = "";
+    }
+
+    async function startCamera() {
+      if (!window.isSecureContext && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
+        throw new Error("このゲームはHTTPSで開いてください。GitHub PagesならHTTPSになります。");
+      }
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error("このブラウザではカメラを使えません。SafariまたはChromeで開いてください。");
+      }
+      if (stream) return;
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: "user",
+          width: { ideal: isIOSLike ? 960 : 1280 },
+          height: { ideal: isIOSLike ? 720 : 720 },
+          frameRate: { ideal: isIOSLike ? 24 : 30, max: 30 }
+        },
+        audio: false
+      });
+      video.srcObject = stream;
+      video.setAttribute("playsinline", "");
+      await video.play();
+      syncCanvasSize();
+      cameraRunning = true;
+      predict();
+    }
+
+    function syncCanvasSize() {
+      if (!video.videoWidth || !video.videoHeight) return;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+    }
+
+    function stopCamera() {
+      cameraRunning = false;
+      if (animationId) cancelAnimationFrame(animationId);
+      animationId = null;
+      if (stream) {
+        for (const track of stream.getTracks()) track.stop();
+        stream = null;
+      }
+      video.srcObject = null;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function visible(p) {
+      if (!p) return false;
+      return p.visibility === undefined || p.visibility > 0.45;
+    }
+
+    function getHandState(landmarks) {
+      const leftShoulder = landmarks[11];
+      const rightShoulder = landmarks[12];
+      const leftWrist = landmarks[15];
+      const rightWrist = landmarks[16];
+      if (![leftShoulder, rightShoulder, leftWrist, rightWrist].every(visible)) return null;
+
+      const shoulderWidth = Math.hypot(leftShoulder.x - rightShoulder.x, leftShoulder.y - rightShoulder.y);
+      const margin = Math.max(0.025, Math.min(0.06, shoulderWidth * 0.10));
+      const leftUp = leftWrist.y < leftShoulder.y - margin;
+      const rightUp = rightWrist.y < rightShoulder.y - margin;
+      return { leftUp, rightUp, leftWrist, rightWrist };
+    }
+
+    function drawPoint(point, text, color) {
+      const x = (1 - point.x) * canvas.width;
+      const y = point.y * canvas.height;
+      ctx.beginPath();
+      ctx.arc(x, y, Math.max(10, canvas.width * 0.011), 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      const fontSize = Math.max(18, Math.min(30, canvas.width * 0.027));
+      ctx.font = `900 ${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = "rgba(255,255,255,.95)";
+      ctx.strokeText(text, x, y - 24);
+      ctx.fillStyle = color;
+      ctx.fillText(text, x, y - 24);
+    }
+
+    function drawPose(handState) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (!handState) return;
+      drawPoint(handState.leftWrist, "ひだり", "#228fc2");
+      drawPoint(handState.rightWrist, "みぎ", "#e84d7d");
+    }
+
+    function updateHandDisplay(handState) {
+      if (!handState) {
+        leftStatus.textContent = "ひだりて：？";
+        rightStatus.textContent = "みぎて：？";
+        return;
+      }
+      leftStatus.textContent = handState.leftUp ? "ひだりて：🙋 ↑" : "ひだりて：↓";
+      rightStatus.textContent = handState.rightUp ? "みぎて：🙋 ↑" : "みぎて：↓";
+    }
+
+    function chooseSide() {
+      if (previousSide && Math.random() < 0.7) return previousSide === "right" ? "left" : "right";
+      return Math.random() < 0.5 ? "right" : "left";
+    }
+
+    function nextRound() {
+      round += 1;
+      updateScore();
+      currentSide = chooseSide();
+      previousSide = currentSide;
+      state = "playing";
+      correctSince = null;
+      wrongSince = null;
+      repeatButton.hidden = false;
+      if (currentSide === "right") setInstruction("みぎ あげて！", "right");
+      else setInstruction("ひだり あげて！", "left");
+      setTimeout(speakInstruction, 100);
+    }
+
+    function burstStars() {
+      if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      for (let i = 0; i < 8; i++) {
+        setTimeout(() => {
+          const el = document.createElement("div");
+          el.textContent = "⭐";
+          Object.assign(el.style, {
+            position: "fixed", zIndex: "100", left: `${35 + Math.random() * 30}%`,
+            top: `${24 + Math.random() * 25}%`, fontSize: `${28 + Math.random() * 34}px`,
+            pointerEvents: "none", transition: "transform .8s ease-out, opacity .8s ease-out"
+          });
+          document.body.appendChild(el);
+          requestAnimationFrame(() => {
+            el.style.transform = `translate(${(Math.random() - .5) * 300}px, ${(Math.random() - .5) * 250}px) rotate(${Math.random() * 300}deg) scale(.3)`;
+            el.style.opacity = "0";
+          });
+          setTimeout(() => el.remove(), 900);
+        }, i * 35);
+      }
+    }
+
+    function bigConfetti() {
+      if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const things = ["⭐", "🎉", "🌟", "🎈", "✨"];
+      for (let i = 0; i < 34; i++) {
+        const el = document.createElement("div");
+        el.className = "confetti";
+        el.textContent = things[Math.floor(Math.random() * things.length)];
+        el.style.left = `${Math.random() * 96}%`;
+        el.style.animationDelay = `${Math.random() * .7}s`;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 3300);
+      }
+    }
+
+    function correct() {
+      state = "success";
+      score += 1;
+      updateScore();
+      repeatButton.hidden = true;
+      setInstruction("せいかい！ ⭐", "success");
+      speak("せいかい！");
+      burstStars();
+      if (round >= MAX_ROUNDS) {
+        setTimeout(finishGame, 1050);
+        return;
+      }
+      setTimeout(() => {
+        state = "waitDown";
+        downSince = null;
+        setInstruction("いったん てを おろしてね 😊");
+      }, 900);
+    }
+
+    function finishGame() {
+      state = "finished";
+      repeatButton.hidden = true;
+      setInstruction(`できたー！ ⭐ ${score}こ！`, "success");
+      speak(`${score}もん せいかい！ すごい！`);
+      bigConfetti();
+      startButton.textContent = "🔁 もう1かい！";
+      startButton.hidden = false;
+      startButton.disabled = false;
+    }
+
+    function evaluateGame(handState) {
+      if (!handState) {
+        cameraMessage.textContent = "あたまから こしまで うつってね！";
+        return;
+      }
+      cameraMessage.textContent = "いいかんじ！";
+      const now = performance.now();
+
+      if (state === "ready" || state === "waitDown") {
+        if (!handState.leftUp && !handState.rightUp) {
+          if (!downSince) downSince = now;
+          if (now - downSince > HANDS_DOWN_MS) {
+            downSince = null;
+            if (state === "ready") nextRound();
+            else {
+              state = "between";
+              setTimeout(nextRound, 250);
+            }
+          }
+        } else {
+          downSince = null;
+          if (state === "ready") setInstruction("まず りょうてを おろしてね 😊");
+        }
+        return;
+      }
+
+      if (state !== "playing") return;
+
+      const targetUp = currentSide === "right" ? handState.rightUp : handState.leftUp;
+      const otherUp = currentSide === "right" ? handState.leftUp : handState.rightUp;
+
+      if (targetUp && !otherUp) {
+        wrongSince = null;
+        if (!correctSince) correctSince = now;
+        if (now - correctSince > CORRECT_HOLD_MS) correct();
+        return;
+      }
+
+      correctSince = null;
+
+      if (targetUp && otherUp) {
+        setInstruction("ひとつの てだけだよ！ 😄", "wrong");
+        return;
+      }
+
+      if (!targetUp && otherUp) {
+        if (!wrongSince) {
+          wrongSince = now;
+          return;
+        }
+        if (now - wrongSince > 450) {
+          setInstruction(`おしい！ ${currentSide === "right" ? "みぎ" : "ひだり"}だよ！`, "wrong");
+          wrongSince = now + 10000;
+        }
+        return;
+      }
+
+      wrongSince = null;
+      if (currentSide === "right") setInstruction("みぎ あげて！", "right");
+      else setInstruction("ひだり あげて！", "left");
+    }
+
+    function predict() {
+      if (!cameraRunning) return;
+      const now = performance.now();
+      if (video.readyState >= 2 && now - lastInference >= INFERENCE_INTERVAL_MS) {
+        lastInference = now;
+        try {
+          const result = poseLandmarker?.detectForVideo(video, now);
+          if (result?.landmarks?.length) {
+            const handState = getHandState(result.landmarks[0]);
+            drawPose(handState);
+            updateHandDisplay(handState);
+            evaluateGame(handState);
+          } else {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            updateHandDisplay(null);
+            cameraMessage.textContent = "あたまから こしまで うつってね！";
+          }
+        } catch (e) {
+          console.warn("pose detection error", e);
+        }
+      }
+      animationId = requestAnimationFrame(predict);
+    }
+
+    async function startGame() {
+      startButton.disabled = true;
+      loading.textContent = "";
+      if ("speechSynthesis" in window) {
+        speechSynthesis.cancel();
+        speechSynthesis.resume();
+      }
+      speak("ゲームを はじめるよ！");
+      try {
+        cameraMessage.textContent = "カメラを じゅんびしています…";
+        await startCamera();
+        setInstruction("じゅんびちゅう…");
+        await initializePose();
+        round = 0;
+        score = 0;
+        previousSide = null;
+        currentSide = null;
+        correctSince = null;
+        downSince = null;
+        wrongSince = null;
+        updateScore();
+        state = "ready";
+        setInstruction("まず りょうてを おろしてね 😊");
+        startButton.hidden = true;
+        repeatButton.hidden = true;
+        stopButton.hidden = false;
+        startButton.disabled = false;
+      } catch (error) {
+        console.error(error);
+        setInstruction("カメラを つかえませんでした 😢", "wrong");
+        const msg = String(error?.message || error);
+        if (/NotAllowed|Permission|denied/i.test(msg)) {
+          loading.textContent = "カメラを「許可」してから、ページを読み直してください。";
+        } else {
+          loading.textContent = msg;
+        }
+        cameraMessage.textContent = "Safari / Chrome のカメラ設定を確認してね";
+        startButton.disabled = false;
+      }
+    }
+
+    startButton.addEventListener("click", startGame);
+    repeatButton.addEventListener("click", () => { if (state === "playing") speakInstruction(); });
+    stopButton.addEventListener("click", () => {
+      if ("speechSynthesis" in window) speechSynthesis.cancel();
+      stopCamera();
+      state = "idle";
+      round = 0;
+      score = 0;
+      updateScore();
+      setInstruction("また あそぼうね！ 👋");
+      cameraMessage.textContent = "カメラは とまりました";
+      leftStatus.textContent = "ひだりて：？";
+      rightStatus.textContent = "みぎて：？";
+      startButton.textContent = "▶ スタート！";
+      startButton.hidden = false;
+      startButton.disabled = false;
+      repeatButton.hidden = true;
+      stopButton.hidden = true;
+      loading.textContent = "";
+    });
+
+    video.addEventListener("loadedmetadata", syncCanvasSize);
+    window.addEventListener("resize", syncCanvasSize);
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden && cameraRunning) video.play().catch(() => {});
+    });
+    window.addEventListener("pagehide", () => {
+      if (stream) for (const track of stream.getTracks()) track.stop();
+    });
+  </script>
+</body>
+</html>
